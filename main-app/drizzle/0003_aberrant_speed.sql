@@ -1,0 +1,1 @@
+ALTER TABLE `attendance_entries` ADD `personnel_names` text DEFAULT '' NOT NULL;

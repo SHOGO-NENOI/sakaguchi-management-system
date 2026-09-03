@@ -1,0 +1,1 @@
+ALTER TABLE `attendance_entries` ADD `hotel_name` text DEFAULT '' NOT NULL;
