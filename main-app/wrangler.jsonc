@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "sakaguchi-management-system",
+  "main": "./worker/index.ts",
+  "compatibility_date": "2026-09-04",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sakaguchi-main-db",
+      "database_id": "988aea9e-7bd8-484c-a09c-f4ca1d2fd2ac",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "assets": {
+    "binding": "ASSETS"
+  },
+  "images": {
+    "binding": "IMAGES"
+  },
+  "observability": {
+    "enabled": true
+  }
+}
