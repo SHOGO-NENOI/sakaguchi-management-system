@@ -148,7 +148,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.11";
+const APP_VERSION = "2.2.12";
 const APP_UPDATED_AT = "2026年9月4日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -910,6 +910,8 @@ export default function Home() {
   const [siteLocationSaving, setSiteLocationSaving] = useState(false);
   const [siteLocationMessage, setSiteLocationMessage] = useState("");
   const [siteCardSearch, setSiteCardSearch] = useState("");
+  const [siteCardSort, setSiteCardSort] = useState<"newest" | "oldest">("newest");
+  const [siteAddressFilter, setSiteAddressFilter] = useState<"all" | "registered" | "missing">("all");
   const [coordinateRegions, setCoordinateRegions] = useState<
     Record<string, RegionInfo>
   >({});
@@ -1606,9 +1608,15 @@ export default function Home() {
     const normalize = (value: string) =>
       value.normalize("NFKC").trim().replace(/\s+/g, "").toLocaleLowerCase();
     const query = normalize(siteCardSearch);
-    if (!query) return siteCards;
-    return siteCards.filter((card) => normalize(card.site).includes(query));
-  }, [siteCardSearch, siteCards]);
+    return siteCards.filter((card) => {
+      const matchesSearch = !query || normalize(card.site).includes(query);
+      const hasAddress = Boolean(card.address.trim());
+      const matchesAddress =
+        siteAddressFilter === "all" ||
+        (siteAddressFilter === "registered" ? hasAddress : !hasAddress);
+      return matchesSearch && matchesAddress;
+    });
+  }, [siteAddressFilter, siteCardSearch, siteCards]);
   useEffect(() => {
     const coordinates = [
       ...new Map(
@@ -1743,11 +1751,25 @@ export default function Home() {
           (sum, cards) => sum + cards.length,
           0,
         ),
-        municipalities: [...municipalities.entries()].sort(([a], [b]) =>
-          sortUnsetLast(a, b),
-        ),
+        municipalities: [...municipalities.entries()]
+          .sort(([a], [b]) => sortUnsetLast(a, b))
+          .map(([municipality, cards]) => [
+            municipality,
+            [...cards].sort((a, b) => {
+              const aDate = a.lastDate || "";
+              const bDate = b.lastDate || "";
+              if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
+              if (!aDate) return 1;
+              if (!bDate) return -1;
+              const dateOrder =
+                siteCardSort === "oldest"
+                  ? aDate.localeCompare(bDate)
+                  : bDate.localeCompare(aDate);
+              return dateOrder || a.site.localeCompare(b.site, "ja");
+            }),
+          ] as [string, SiteCardData[]]),
       }));
-  }, [filteredSiteCards, coordinateRegions]);
+  }, [filteredSiteCards, coordinateRegions, siteCardSort]);
   const visibleToolSets = useMemo(
     () => toolSets.filter((set) => set.category === toolCategory),
     [toolSets, toolCategory],
@@ -5337,6 +5359,46 @@ export default function Home() {
                 )}
                 <small>{filteredSiteCards.length}件</small>
               </div>
+              <div className="site-list-controls">
+                <label>
+                  <span>並べ替え</span>
+                  <select
+                    value={siteCardSort}
+                    onChange={(e) =>
+                      setSiteCardSort(e.target.value as "newest" | "oldest")
+                    }
+                  >
+                    <option value="newest">前回訪問日：新しい順</option>
+                    <option value="oldest">前回訪問日：古い順</option>
+                  </select>
+                </label>
+                <label>
+                  <span>住所</span>
+                  <select
+                    value={siteAddressFilter}
+                    onChange={(e) =>
+                      setSiteAddressFilter(
+                        e.target.value as "all" | "registered" | "missing",
+                      )
+                    }
+                  >
+                    <option value="all">すべて</option>
+                    <option value="registered">住所登録済み</option>
+                    <option value="missing">住所未登録</option>
+                  </select>
+                </label>
+                {(siteCardSort !== "newest" || siteAddressFilter !== "all") && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSiteCardSort("newest");
+                      setSiteAddressFilter("all");
+                    }}
+                  >
+                    リセット
+                  </button>
+                )}
+              </div>
               <div className="site-master-toolbar">
                 <button
                   type="button"
@@ -5502,6 +5564,13 @@ export default function Home() {
                                           </small>
                                           <div className="site-name-line">
                                             <h3>{card.site || "現場名不明"}</h3>
+                                            <span
+                                              className={`site-address-badge ${card.address.trim() ? "registered" : "missing"}`}
+                                            >
+                                              {card.address.trim()
+                                                ? "住所登録済み"
+                                                : "住所未登録"}
+                                            </span>
                                             {documentCount === undefined ? (
                                               <span className="site-document-badge loading">
                                                 資料確認中

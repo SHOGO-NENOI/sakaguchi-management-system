@@ -1997,6 +1997,70 @@ textarea {
   border: 1px dashed var(--line);
   border-radius: 11px;
 }
+
+.site-list-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--green) 4%, var(--paper));
+}
+.site-list-controls label {
+  display: grid;
+  gap: 5px;
+}
+.site-list-controls label > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+.site-list-controls select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.site-list-controls > button {
+  padding: 9px 10px;
+  border-radius: 8px;
+  color: var(--green);
+  font-size: 10px;
+  font-weight: 800;
+}
+.site-address-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: 9px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.site-address-badge.registered {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 12%, var(--paper));
+}
+.site-address-badge.missing {
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, var(--paper));
+}
+@media (max-width: 640px) {
+  .site-list-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .site-list-controls > button {
+    grid-column: 1 / -1;
+  }
+}
 .site-region-groups {
   display: grid;
   gap: 18px;
