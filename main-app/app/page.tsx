@@ -148,7 +148,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.12";
+const APP_VERSION = "2.2.13";
 const APP_UPDATED_AT = "2026年9月4日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -894,6 +894,7 @@ export default function Home() {
   >("default");
   const [activeTab, setActiveTab] = useState<AppTab>("entry");
   const [skin, setSkin] = useState<Skin>("green");
+  const [skinReady, setSkinReady] = useState(false);
   const [shiftBoardDone, setShiftBoardDone] = useState<string[]>([]);
   const [paySettings, setPaySettings] =
     useState<PaySettings>(defaultPaySettings);
@@ -1255,6 +1256,9 @@ export default function Home() {
           });
       } catch {
         /* 端末設定が読めない場合は既定表示を使う */
+      } finally {
+        // 保存済みスキンの読み込み前に既定値を上書きしないようにする。
+        setSkinReady(true);
       }
     }, 0);
     return () => window.clearTimeout(timer);
@@ -1262,12 +1266,13 @@ export default function Home() {
 
   useEffect(() => {
     document.documentElement.dataset.theme = skin;
+    if (!skinReady) return;
     try {
       localStorage.setItem("sakaguchi-attendance-skin", skin);
     } catch {
       /* 選択自体は続ける */
     }
-  }, [skin]);
+  }, [skin, skinReady]);
 
   useEffect(() => {
     try {
