@@ -104,15 +104,27 @@ export async function DELETE(request: Request) {
   const failed: { id: number; error: string }[] = [];
   const deleted: number[] = [];
   for (const row of rows) {
+    // アプリ側の削除を最優先する。
+    // Googleカレンダー側の削除に失敗しても、勤務記録はゴミ箱へ移動する。
+    let syncStatus = "synced";
+    let syncError = "";
     try {
       await syncGoogleCalendar(row, "delete");
-      await db.update(attendanceEntries).set({ deletedAt: new Date().toISOString(), syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "app" }).where(eq(attendanceEntries.id, row.id));
-      deleted.push(row.id);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Googleから削除できませんでした";
-      await db.update(attendanceEntries).set({ syncStatus: "error", syncError: message }).where(eq(attendanceEntries.id, row.id));
-      failed.push({ id: row.id, error: message });
+      syncStatus = "error";
+      syncError = error instanceof Error ? error.message : "Googleから削除できませんでした";
+      failed.push({ id: row.id, error: syncError });
     }
+
+    await db.update(attendanceEntries).set({
+      deletedAt: new Date().toISOString(),
+      syncStatus,
+      syncError,
+      lastSyncedAt: syncStatus === "synced" ? new Date().toISOString() : row.lastSyncedAt,
+      lastModifiedSource: "app",
+    }).where(eq(attendanceEntries.id, row.id));
+
+    deleted.push(row.id);
   }
   return Response.json({ ok: failed.length === 0, deleted, failed }, { status: failed.length ? 409 : 200 });
 }
