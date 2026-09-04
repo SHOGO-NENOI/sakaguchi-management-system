@@ -118,6 +118,7 @@ type ToolDragState = {
   timer: number;
 };
 type Skin = "green" | "blue" | "dark" | "black";
+type FontSize = "small" | "standard" | "large";
 type AppTab =
   | "entry"
   | "history"
@@ -148,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.13";
+const APP_VERSION = "2.2.14";
 const APP_UPDATED_AT = "2026年9月4日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -895,6 +896,8 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState<AppTab>("entry");
   const [skin, setSkin] = useState<Skin>("green");
   const [skinReady, setSkinReady] = useState(false);
+  const [fontSize, setFontSize] = useState<FontSize>("standard");
+  const [fontSizeReady, setFontSizeReady] = useState(false);
   const [shiftBoardDone, setShiftBoardDone] = useState<string[]>([]);
   const [paySettings, setPaySettings] =
     useState<PaySettings>(defaultPaySettings);
@@ -913,6 +916,7 @@ export default function Home() {
   const [siteCardSearch, setSiteCardSearch] = useState("");
   const [siteCardSort, setSiteCardSort] = useState<"region" | "name" | "newest" | "oldest">("region");
   const [siteAddressFilter, setSiteAddressFilter] = useState<"all" | "registered" | "missing">("all");
+  const [siteDocumentFilter, setSiteDocumentFilter] = useState<"all" | "has" | "none">("all");
   const [coordinateRegions, setCoordinateRegions] = useState<
     Record<string, RegionInfo>
   >({});
@@ -1246,6 +1250,11 @@ export default function Home() {
         ) as Skin | null;
         if (savedSkin && ["green", "blue", "dark", "black"].includes(savedSkin))
           setSkin(savedSkin);
+        const savedFontSize = localStorage.getItem(
+          "sakaguchi-attendance-font-size",
+        ) as FontSize | null;
+        if (savedFontSize && ["small", "standard", "large"].includes(savedFontSize))
+          setFontSize(savedFontSize);
         const savedTransfer = localStorage.getItem("sakaguchi-shiftboard-done");
         if (savedTransfer) setShiftBoardDone(JSON.parse(savedTransfer));
         const savedPaySettings = localStorage.getItem("sakaguchi-pay-settings");
@@ -1259,6 +1268,7 @@ export default function Home() {
       } finally {
         // 保存済みスキンの読み込み前に既定値を上書きしないようにする。
         setSkinReady(true);
+        setFontSizeReady(true);
       }
     }, 0);
     return () => window.clearTimeout(timer);
@@ -1273,6 +1283,16 @@ export default function Home() {
       /* 選択自体は続ける */
     }
   }, [skin, skinReady]);
+
+  useEffect(() => {
+    document.documentElement.dataset.fontSize = fontSize;
+    if (!fontSizeReady) return;
+    try {
+      localStorage.setItem("sakaguchi-attendance-font-size", fontSize);
+    } catch {
+      /* 選択自体は続ける */
+    }
+  }, [fontSize, fontSizeReady]);
 
   useEffect(() => {
     try {
@@ -1623,13 +1643,20 @@ export default function Home() {
       const matchesAddress =
         siteAddressFilter === "all" ||
         (siteAddressFilter === "registered" ? hasAddress : !hasAddress);
-      return matchesSearch && matchesAddress;
+      const documentCount = siteDocumentCounts?.[siteCardKey(card)] ?? 0;
+      const matchesDocuments =
+        siteDocumentFilter === "all" ||
+        siteDocumentCounts === null ||
+        (siteDocumentFilter === "has" ? documentCount > 0 : documentCount === 0);
+      return matchesSearch && matchesAddress && matchesDocuments;
     });
   }, [
     coordinateAddresses,
     siteAddressFilter,
     siteCardSearch,
     siteCards,
+    siteDocumentCounts,
+    siteDocumentFilter,
   ]);
   useEffect(() => {
     const coordinates = [
@@ -5427,12 +5454,28 @@ export default function Home() {
                     <option value="missing">住所未登録</option>
                   </select>
                 </label>
-                {(siteCardSort !== "region" || siteAddressFilter !== "all") && (
+                <label>
+                  <span>資料</span>
+                  <select
+                    value={siteDocumentFilter}
+                    onChange={(e) =>
+                      setSiteDocumentFilter(e.target.value as "all" | "has" | "none")
+                    }
+                  >
+                    <option value="all">すべて</option>
+                    <option value="has">資料あり</option>
+                    <option value="none">資料なし</option>
+                  </select>
+                </label>
+                {(siteCardSort !== "region" ||
+                  siteAddressFilter !== "all" ||
+                  siteDocumentFilter !== "all") && (
                   <button
                     type="button"
                     onClick={() => {
                       setSiteCardSort("region");
                       setSiteAddressFilter("all");
+                      setSiteDocumentFilter("all");
                     }}
                   >
                     リセット
@@ -5607,26 +5650,6 @@ export default function Home() {
                                           </small>
                                           <div className="site-name-line">
                                             <h3>{card.site || "現場名不明"}</h3>
-                                            <span
-                                              className={`site-address-badge ${card.address.trim() ? "registered" : "missing"}`}
-                                            >
-                                              {card.address.trim()
-                                                ? "住所登録済み"
-                                                : "住所未登録"}
-                                            </span>
-                                            {documentCount === undefined ? (
-                                              <span className="site-document-badge loading">
-                                                資料確認中
-                                              </span>
-                                            ) : documentCount > 0 ? (
-                                              <span className="site-document-badge has-files">
-                                                資料あり・{documentCount}件
-                                              </span>
-                                            ) : (
-                                              <span className="site-document-badge no-files">
-                                                資料なし
-                                              </span>
-                                            )}
                                           </div>
                                         </div>
                                         <div className="site-row-last">
@@ -6228,6 +6251,29 @@ export default function Home() {
                   {skin === value && <b>選択中</b>}
                 </button>
               ))}
+            </div>
+            <div className="font-size-settings">
+              <div>
+                <strong>文字サイズ</strong>
+                <small>アプリ全体の文字サイズを変更できます</small>
+              </div>
+              <div className="font-size-options" aria-label="文字サイズ">
+                {([
+                  ["small", "小さめ"],
+                  ["standard", "標準"],
+                  ["large", "大きめ"],
+                ] as [FontSize, string][]).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={fontSize === value ? "active" : ""}
+                    aria-pressed={fontSize === value}
+                    onClick={() => setFontSize(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
           </section>
         )}

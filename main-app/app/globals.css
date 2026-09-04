@@ -4540,3 +4540,73 @@ footer {
   padding: 0;
   border: 0;
 }
+
+/* v2.2.14: site card readability + app font-size setting */
+.font-size-settings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.font-size-settings strong,
+.font-size-settings small { display: block; }
+.font-size-settings small { margin-top: 4px; color: var(--muted); }
+.font-size-options { display: flex; gap: 8px; }
+.font-size-options button {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 8px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+}
+.font-size-options button.active {
+  border-color: var(--green);
+  color: var(--green);
+  box-shadow: inset 0 0 0 1px var(--green);
+}
+html[data-font-size="small"] { font-size: 14px; }
+html[data-font-size="standard"] { font-size: 16px; }
+html[data-font-size="large"] { font-size: 18px; }
+html[data-font-size="small"] body { font-size: 0.92em; }
+html[data-font-size="large"] body { font-size: 1.08em; }
+
+/* Badges moved out of the card; use the released width for the site name. */
+.site-name-line { display: block; }
+.site-name-line h3 {
+  max-width: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .site-card-row {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: 3px 6px;
+  }
+  .site-card-identity h3,
+  .site-name-line h3 {
+    font-size: 13px;
+    letter-spacing: -0.02em;
+  }
+  html[data-font-size="small"] .site-card-identity h3,
+  html[data-font-size="small"] .site-name-line h3 { font-size: 12px; }
+  html[data-font-size="large"] .site-card-identity h3,
+  html[data-font-size="large"] .site-name-line h3 {
+    font-size: 14px;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .site-row-last { min-width: 54px; }
+  .site-list-controls { grid-template-columns: 1fr 1fr; }
+  .site-list-controls > button { grid-column: 1 / -1; justify-self: end; }
+  .font-size-settings { grid-template-columns: 1fr; }
+  .font-size-options { width: 100%; }
+  .font-size-options button { flex: 1; }
+}
