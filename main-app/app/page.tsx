@@ -910,7 +910,7 @@ export default function Home() {
   const [siteLocationSaving, setSiteLocationSaving] = useState(false);
   const [siteLocationMessage, setSiteLocationMessage] = useState("");
   const [siteCardSearch, setSiteCardSearch] = useState("");
-  const [siteCardSort, setSiteCardSort] = useState<"region" | "newest" | "oldest">("region");
+  const [siteCardSort, setSiteCardSort] = useState<"region" | "name" | "newest" | "oldest">("region");
   const [siteAddressFilter, setSiteAddressFilter] = useState<"all" | "registered" | "missing">("all");
   const [coordinateRegions, setCoordinateRegions] = useState<
     Record<string, RegionInfo>
@@ -1731,82 +1731,78 @@ export default function Home() {
       cancelled = true;
     };
   }, [siteCards]);
-  const globallySortedSiteCards = useMemo(() => {
-    if (siteCardSort === "region") return filteredSiteCards;
-    return [...filteredSiteCards].sort((a, b) => {
-      const aDate = a.lastDate || "";
-      const bDate = b.lastDate || "";
-      // 未訪問は新しい順・古い順のどちらでも最後にまとめる。
-      if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
-      if (!aDate) return 1;
-      if (!bDate) return -1;
-      const dateOrder =
-        siteCardSort === "oldest"
-          ? aDate.localeCompare(bDate)
-          : bDate.localeCompare(aDate);
-      return dateOrder || a.site.localeCompare(b.site, "ja");
-    });
-  }, [filteredSiteCards, siteCardSort]);
   const groupedSiteCards = useMemo(() => {
-    if (siteCardSort !== "region") {
-      // 日付ソート時は地域グループで再集約せず、全現場の順序をそのまま維持する。
-      return globallySortedSiteCards.map((card, index) => {
-        const { prefecture, municipality } = cardRegionInfo(
-          card,
-          coordinateRegions,
-        );
-        return {
-          prefecture: `${prefecture}__${municipality}__${siteCardKey(card)}__${index}`,
-          label: prefecture,
-          count: 1,
-          municipalities: [[municipality, [card]]] as [string, SiteCardData[]][],
-          flat: true,
-        };
-      });
-    }
-    const groups = new Map<string, Map<string, SiteCardData[]>>();
+    const prefectureGroups = new Map<string, SiteCardData[]>();
     filteredSiteCards.forEach((card) => {
-      const { prefecture, municipality } = cardRegionInfo(
-        card,
-        coordinateRegions,
-      );
-      const municipalities =
-        groups.get(prefecture) ?? new Map<string, SiteCardData[]>();
-      municipalities.set(municipality, [
-        ...(municipalities.get(municipality) ?? []),
+      const { prefecture } = cardRegionInfo(card, coordinateRegions);
+      prefectureGroups.set(prefecture, [
+        ...(prefectureGroups.get(prefecture) ?? []),
         card,
       ]);
-      groups.set(prefecture, municipalities);
     });
+
     const sortUnsetLast = (a: string, b: string) =>
       a.includes("未設定")
         ? 1
         : b.includes("未設定")
           ? -1
           : a.localeCompare(b, "ja");
-    return [...groups.entries()]
+
+    const sortWithinPrefecture = (cards: SiteCardData[]) =>
+      [...cards].sort((a, b) => {
+        if (siteCardSort === "name") {
+          return a.site.localeCompare(b.site, "ja", { sensitivity: "base" });
+        }
+        const aDate = a.lastDate || "";
+        const bDate = b.lastDate || "";
+        // 前回訪問日の並べ替えでは、未訪問を常に最後にまとめる。
+        if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
+        if (!aDate) return 1;
+        if (!bDate) return -1;
+        const dateOrder =
+          siteCardSort === "oldest"
+            ? aDate.localeCompare(bDate)
+            : bDate.localeCompare(aDate);
+        return dateOrder || a.site.localeCompare(b.site, "ja");
+      });
+
+    return [...prefectureGroups.entries()]
       .sort(([a], [b]) => sortUnsetLast(a, b))
-      .map(([prefecture, municipalities]) => ({
-        prefecture,
-        label: prefecture,
-        count: [...municipalities.values()].reduce(
-          (sum, cards) => sum + cards.length,
-          0,
-        ),
-        municipalities: [...municipalities.entries()]
-          .sort(([a], [b]) => sortUnsetLast(a, b))
-          .map(([municipality, cards]) => [
-            municipality,
-            [...cards].sort((a, b) => a.site.localeCompare(b.site, "ja")),
-          ] as [string, SiteCardData[]]),
-        flat: false,
-      }));
-  }, [
-    coordinateRegions,
-    filteredSiteCards,
-    globallySortedSiteCards,
-    siteCardSort,
-  ]);
+      .map(([prefecture, prefectureCards]) => {
+        if (siteCardSort !== "region") {
+          // 地域順以外では県の区切りだけ残し、市区町村をまたいで県内を1本に並べる。
+          const cards = sortWithinPrefecture(prefectureCards);
+          return {
+            prefecture,
+            label: prefecture,
+            count: cards.length,
+            municipalities: [["", cards]] as [string, SiteCardData[]][],
+            flat: true,
+          };
+        }
+
+        const municipalities = new Map<string, SiteCardData[]>();
+        prefectureCards.forEach((card) => {
+          const { municipality } = cardRegionInfo(card, coordinateRegions);
+          municipalities.set(municipality, [
+            ...(municipalities.get(municipality) ?? []),
+            card,
+          ]);
+        });
+        return {
+          prefecture,
+          label: prefecture,
+          count: prefectureCards.length,
+          municipalities: [...municipalities.entries()]
+            .sort(([a], [b]) => sortUnsetLast(a, b))
+            .map(([municipality, cards]) => [
+              municipality,
+              [...cards].sort((a, b) => a.site.localeCompare(b.site, "ja")),
+            ] as [string, SiteCardData[]]),
+          flat: false,
+        };
+      });
+  }, [coordinateRegions, filteredSiteCards, siteCardSort]);
   const visibleToolSets = useMemo(
     () => toolSets.filter((set) => set.category === toolCategory),
     [toolSets, toolCategory],
@@ -5402,12 +5398,13 @@ export default function Home() {
                   <select
                     value={siteCardSort}
                     onChange={(e) =>
-                      setSiteCardSort(e.target.value as "region" | "newest" | "oldest")
+                      setSiteCardSort(e.target.value as "region" | "name" | "newest" | "oldest")
                     }
                   >
-                    <option value="region">地域順（都道府県・市区町村）</option>
-                    <option value="newest">前回訪問日：新しい順</option>
+                    <option value="region">地域順</option>
+                    <option value="name">あいうえお順</option>
                     <option value="oldest">前回訪問日：古い順</option>
+                    <option value="newest">前回訪問日：新しい順</option>
                   </select>
                 </label>
                 <label>
@@ -5560,10 +5557,12 @@ export default function Home() {
                               className="site-municipality-group"
                               key={`${prefectureGroup.prefecture}-${municipality}`}
                             >
-                              <header className="site-municipality-heading">
-                                <strong>{municipality}</strong>
-                                <span>{cards.length}件</span>
-                              </header>
+                              {!prefectureGroup.flat && (
+                                <header className="site-municipality-heading">
+                                  <strong>{municipality}</strong>
+                                  <span>{cards.length}件</span>
+                                </header>
+                              )}
                               <div className="site-card-grid">
                                 {cards.map((card) => {
                                   const days = card.lastDate
