@@ -96,8 +96,20 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const body = await request.json() as { id?: number; ids?: number[] };
-  const ids = [...new Set([...(body.ids ?? []), ...(body.id ? [body.id] : [])])].filter(Number.isInteger);
+  const body = await request.json() as { id?: number | string; ids?: Array<number | string> };
+
+  // APIのGETでは id を文字列として返しているため、
+  // フロントから "123" のような文字列IDが送られてきても数値へ変換して受け付ける。
+  const rawIds = [
+    ...(body.ids ?? []),
+    ...(body.id !== undefined && body.id !== null ? [body.id] : []),
+  ];
+  const ids = [...new Set(
+    rawIds
+      .map((value) => Number(value))
+      .filter((value) => Number.isInteger(value) && value > 0)
+  )];
+
   if (!ids.length) return Response.json({ error: "削除する記録が見つかりません" }, { status: 400 });
   const db = await getDb();
   const rows = await db.select().from(attendanceEntries).where(and(inArray(attendanceEntries.id, ids), eq(attendanceEntries.deletedAt, "")));
