@@ -15,7 +15,10 @@ function base64ToBytes(value: string) {
 
 async function encryptionKey() {
   const { env } = await import("cloudflare:workers");
-  const encoded = (env as unknown as Record<string, string>).GOOGLE_OAUTH_ENCRYPTION_KEY;
+  const workerEnv = env as unknown as Record<string, string | undefined>;
+  const encoded =
+    workerEnv.GOOGLE_OAUTH_ENCRYPTION_KEY ??
+    process.env.GOOGLE_OAUTH_ENCRYPTION_KEY;
   if (!encoded) throw new Error("Google連携の暗号化キーが設定されていません");
   const raw = base64ToBytes(encoded);
   if (raw.byteLength !== 32) throw new Error("Google連携の暗号化キーが正しくありません");
