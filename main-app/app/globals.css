@@ -4523,3 +4523,20 @@ footer {
     margin-right: auto;
   }
 }
+
+/* v2.2.12 fix: keep global last-visit ordering across prefectures/municipalities. */
+.site-region-group.date-sorted-flat {
+  border: 0;
+  background: transparent;
+}
+.site-region-group.date-sorted-flat > .site-region-heading,
+.site-region-group.date-sorted-flat .site-municipality-heading {
+  display: none;
+}
+.site-region-group.date-sorted-flat > .site-municipality-groups,
+.site-region-group.date-sorted-flat .site-municipality-group,
+.site-region-group.date-sorted-flat .site-card-grid {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

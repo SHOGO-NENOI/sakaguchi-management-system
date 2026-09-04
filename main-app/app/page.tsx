@@ -910,7 +910,7 @@ export default function Home() {
   const [siteLocationSaving, setSiteLocationSaving] = useState(false);
   const [siteLocationMessage, setSiteLocationMessage] = useState("");
   const [siteCardSearch, setSiteCardSearch] = useState("");
-  const [siteCardSort, setSiteCardSort] = useState<"newest" | "oldest">("newest");
+  const [siteCardSort, setSiteCardSort] = useState<"region" | "newest" | "oldest">("region");
   const [siteAddressFilter, setSiteAddressFilter] = useState<"all" | "registered" | "missing">("all");
   const [coordinateRegions, setCoordinateRegions] = useState<
     Record<string, RegionInfo>
@@ -1610,13 +1610,22 @@ export default function Home() {
     const query = normalize(siteCardSearch);
     return siteCards.filter((card) => {
       const matchesSearch = !query || normalize(card.site).includes(query);
-      const hasAddress = Boolean(card.address.trim());
+      const resolvedAddress =
+        card.address ||
+        coordinateAddresses[coordinateKey(card.coordinates)] ||
+        "";
+      const hasAddress = Boolean(resolvedAddress.trim());
       const matchesAddress =
         siteAddressFilter === "all" ||
         (siteAddressFilter === "registered" ? hasAddress : !hasAddress);
       return matchesSearch && matchesAddress;
     });
-  }, [siteAddressFilter, siteCardSearch, siteCards]);
+  }, [
+    coordinateAddresses,
+    siteAddressFilter,
+    siteCardSearch,
+    siteCards,
+  ]);
   useEffect(() => {
     const coordinates = [
       ...new Map(
@@ -1722,7 +1731,39 @@ export default function Home() {
       cancelled = true;
     };
   }, [siteCards]);
+  const globallySortedSiteCards = useMemo(() => {
+    if (siteCardSort === "region") return filteredSiteCards;
+    return [...filteredSiteCards].sort((a, b) => {
+      const aDate = a.lastDate || "";
+      const bDate = b.lastDate || "";
+      // 未訪問は新しい順・古い順のどちらでも最後にまとめる。
+      if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
+      if (!aDate) return 1;
+      if (!bDate) return -1;
+      const dateOrder =
+        siteCardSort === "oldest"
+          ? aDate.localeCompare(bDate)
+          : bDate.localeCompare(aDate);
+      return dateOrder || a.site.localeCompare(b.site, "ja");
+    });
+  }, [filteredSiteCards, siteCardSort]);
   const groupedSiteCards = useMemo(() => {
+    if (siteCardSort !== "region") {
+      // 日付ソート時は地域グループで再集約せず、全現場の順序をそのまま維持する。
+      return globallySortedSiteCards.map((card, index) => {
+        const { prefecture, municipality } = cardRegionInfo(
+          card,
+          coordinateRegions,
+        );
+        return {
+          prefecture: `${prefecture}__${municipality}__${siteCardKey(card)}__${index}`,
+          label: prefecture,
+          count: 1,
+          municipalities: [[municipality, [card]]] as [string, SiteCardData[]][],
+          flat: true,
+        };
+      });
+    }
     const groups = new Map<string, Map<string, SiteCardData[]>>();
     filteredSiteCards.forEach((card) => {
       const { prefecture, municipality } = cardRegionInfo(
@@ -1747,6 +1788,7 @@ export default function Home() {
       .sort(([a], [b]) => sortUnsetLast(a, b))
       .map(([prefecture, municipalities]) => ({
         prefecture,
+        label: prefecture,
         count: [...municipalities.values()].reduce(
           (sum, cards) => sum + cards.length,
           0,
@@ -1755,21 +1797,16 @@ export default function Home() {
           .sort(([a], [b]) => sortUnsetLast(a, b))
           .map(([municipality, cards]) => [
             municipality,
-            [...cards].sort((a, b) => {
-              const aDate = a.lastDate || "";
-              const bDate = b.lastDate || "";
-              if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
-              if (!aDate) return 1;
-              if (!bDate) return -1;
-              const dateOrder =
-                siteCardSort === "oldest"
-                  ? aDate.localeCompare(bDate)
-                  : bDate.localeCompare(aDate);
-              return dateOrder || a.site.localeCompare(b.site, "ja");
-            }),
+            [...cards].sort((a, b) => a.site.localeCompare(b.site, "ja")),
           ] as [string, SiteCardData[]]),
+        flat: false,
       }));
-  }, [filteredSiteCards, coordinateRegions, siteCardSort]);
+  }, [
+    coordinateRegions,
+    filteredSiteCards,
+    globallySortedSiteCards,
+    siteCardSort,
+  ]);
   const visibleToolSets = useMemo(
     () => toolSets.filter((set) => set.category === toolCategory),
     [toolSets, toolCategory],
@@ -5365,9 +5402,10 @@ export default function Home() {
                   <select
                     value={siteCardSort}
                     onChange={(e) =>
-                      setSiteCardSort(e.target.value as "newest" | "oldest")
+                      setSiteCardSort(e.target.value as "region" | "newest" | "oldest")
                     }
                   >
+                    <option value="region">地域順（都道府県・市区町村）</option>
                     <option value="newest">前回訪問日：新しい順</option>
                     <option value="oldest">前回訪問日：古い順</option>
                   </select>
@@ -5387,11 +5425,11 @@ export default function Home() {
                     <option value="missing">住所未登録</option>
                   </select>
                 </label>
-                {(siteCardSort !== "newest" || siteAddressFilter !== "all") && (
+                {(siteCardSort !== "region" || siteAddressFilter !== "all") && (
                   <button
                     type="button"
                     onClick={() => {
-                      setSiteCardSort("newest");
+                      setSiteCardSort("region");
                       setSiteAddressFilter("all");
                     }}
                   >
@@ -5507,11 +5545,12 @@ export default function Home() {
                 <div className="site-region-groups">
                   {groupedSiteCards.map((prefectureGroup) => (
                     <details
-                      className="site-region-group"
+                      className={`site-region-group ${prefectureGroup.flat ? "date-sorted-flat" : ""}`}
                       key={prefectureGroup.prefecture}
+                      open={prefectureGroup.flat ? true : undefined}
                     >
                       <summary className="site-region-heading">
-                        <strong>{prefectureGroup.prefecture}</strong>
+                        <strong>{prefectureGroup.label}</strong>
                         <span>{prefectureGroup.count}現場</span>
                       </summary>
                       <div className="site-municipality-groups">
