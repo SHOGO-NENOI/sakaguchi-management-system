@@ -149,8 +149,8 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.14";
-const APP_UPDATED_AT = "2026年9月4日";
+const APP_VERSION = "2.2.15";
+const APP_UPDATED_AT = "2026年9月8日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
@@ -851,6 +851,18 @@ function formatFileSize(size: number) {
 }
 
 export default function Home() {
+  const [currentDate, setCurrentDate] = useState(today);
+  useEffect(() => {
+    const refreshDate = () => setCurrentDate(today());
+    const timer = window.setInterval(refreshDate, 30000);
+    window.addEventListener("focus", refreshDate);
+    document.addEventListener("visibilitychange", refreshDate);
+    return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshDate);
+      document.removeEventListener("visibilitychange", refreshDate);
+    };
+  }, []);
   const [entries, setEntries] = useState<Entry[]>([]);
   const [siteMasters, setSiteMasters] = useState<SiteMaster[]>([]);
   const [form, setForm] = useState(emptyEntry());
@@ -894,6 +906,9 @@ export default function Home() {
     "default" | "granted" | "denied" | "unsupported"
   >("default");
   const [activeTab, setActiveTab] = useState<AppTab>("entry");
+  useEffect(() => {
+    setSelectedPlanIds([]);
+  }, [currentDate, month, activeTab]);
   const [skin, setSkin] = useState<Skin>("green");
   const [skinReady, setSkinReady] = useState(false);
   const [fontSize, setFontSize] = useState<FontSize>("standard");
@@ -1351,8 +1366,8 @@ export default function Home() {
     [entries, month],
   );
   const completedMonthEntries = useMemo(
-    () => monthEntries.filter((entry) => entry.date <= today()),
-    [monthEntries],
+    () => monthEntries.filter((entry) => entry.date <= currentDate),
+    [monthEntries, currentDate],
   );
   const selectedYear = month.slice(0, 4);
   const completedYearEntries = useMemo(
@@ -1368,9 +1383,12 @@ export default function Home() {
   const summaryEntries =
     summaryPeriod === "annual" ? completedYearEntries : completedMonthEntries;
   const plannedMonthEntries = useMemo(
-    () => monthEntries.filter((entry) => entry.date > today()),
-    [monthEntries],
+    () => monthEntries.filter((entry) => entry.date > currentDate),
+    [monthEntries, currentDate],
   );
+  const todayEntries = entries
+    .filter((entry) => entry.date === currentDate)
+    .sort((a, b) => a.start.localeCompare(b.start));
   const visibleRecordEntries =
     activeTab === "plans"
       ? [...plannedMonthEntries].sort((a, b) => a.date.localeCompare(b.date))
@@ -6338,6 +6356,69 @@ export default function Home() {
           </details>
         )}
 
+        {activeTab === "plans" && (
+          <section className="history-section today-plans" aria-labelledby="today-plans-title">
+            <div className="section-heading">
+              <div className="heading-title-line">
+                <h2 id="today-plans-title">本日の予定</h2>
+                <time dateTime={currentDate}>{fullDateLabel(currentDate)}</time>
+              </div>
+              <span className="count">{todayEntries.length}件</span>
+            </div>
+            {!ready ? <p role="status">本日の予定を読み込んでいます…</p> : todayEntries.length === 0 ? (
+              <div className="empty"><h3>本日の予定はありません</h3><p>入力タブから本日の勤務内容を登録できます。</p></div>
+            ) : (
+              <div className="today-plan-list">
+                {todayEntries.map((entry) => (
+                  <article className="today-plan-card" key={entry.id}>
+                    <header className="today-plan-header">
+                      <div><span className={`type-badge type-${entry.type}`}>{entry.type}</span>{entry.type !== "休み" && <strong>{formatEntryTimes(entry)}</strong>}</div>
+                      <button type="button" onClick={() => edit(entry)}>編集</button>
+                    </header>
+                    {entry.type === "休み" ? <p>{entry.note || "本日は休みです"}</p> : (
+                      <>
+                        {entrySiteRows(entry).length === 0 && <p>現場は未登録です</p>}
+                        {entrySiteRows(entry).map((row, index) => {
+                          const cardKey = siteCardKey(row);
+                          const master = siteMasters.find((site) => siteCardKey(site) === cardKey);
+                          const address = row.address || master?.address || "";
+                          const coordinates = row.coordinates || master?.coordinates || "";
+                          const documents = siteDocumentsByKey[cardKey];
+                          const count = documents?.length ?? siteDocumentCounts?.[cardKey];
+                          const hasSite = Boolean(row.site || row.location || row.address || row.coordinates);
+                          return (
+                            <section className="today-plan-site" key={`${entry.id}-${index}`}>
+                              <p className="today-plan-location">{row.location || "場所未入力"}</p>
+                              <h3>{row.site || "現場名未入力"}</h3>
+                              <dl>
+                                <div><dt>作業内容</dt><dd>{row.work || "未入力"}</dd></div>
+                                {row.personnelNames && <div><dt>作業者</dt><dd>{row.personnelNames}</dd></div>}
+                                <div><dt>位置情報</dt><dd>{address || coordinates ? <>{address && <span>{address}</span>}{coordinates && <span>{coordinates}</span>}</> : "未登録"}</dd></div>
+                              </dl>
+                              {(address || coordinates) && <a className="today-plan-map" href={mapsUrl(address, coordinates, row.location, row.site)} target="_blank" rel="noreferrer">🗺️ Googleマップで開く</a>}
+                              {row.note && <p className="today-plan-note">{row.note}</p>}
+                              {hasSite && (
+                                <details className="today-plan-documents" onToggle={(event) => { if (event.currentTarget.open) void loadSiteDocuments(cardKey); }}>
+                                  <summary>📎 現場資料{count !== undefined ? `（${count}件）` : "を確認"}</summary>
+                                  {siteDocumentLoadingKey === cardKey && !documents && <p role="status">資料を読み込んでいます…</p>}
+                                  {documents?.length === 0 && <p>登録された資料はありません</p>}
+                                  {documents?.map((document) => <a key={document.id} href={`/api/site-documents/file?id=${document.id}`} target="_blank" rel="noreferrer">{document.contentType === "application/pdf" ? "PDF" : "画像"}：{document.fileName} ↗</a>)}
+                                  {siteDocumentMessages[cardKey] && <p role="status">{siteDocumentMessages[cardKey]}</p>}
+                                  {siteDocumentMessages[cardKey] && <button type="button" onClick={() => void loadSiteDocuments(cardKey, true)}>資料を再読み込み</button>}
+                                </details>
+                              )}
+                            </section>
+                          );
+                        })}
+                        {entry.businessTrip && <p>出張・夜ご飯：{entry.dinnerType || "未選択"}{entry.hotelName && ` ／ 宿泊：${entry.hotelName}`}</p>}
+                      </>
+                    )}
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
         {(activeTab === "history" || activeTab === "plans") && (
           <section className="history-section">
             <div className="section-heading history-heading">
@@ -6348,7 +6429,7 @@ export default function Home() {
                     : "ATTENDANCE RECORDS"}
                 </span>
                 <div className="heading-title-line">
-                  <h2>{activeTab === "plans" ? "勤務予定" : "勤務記録"}</h2>
+                  <h2>{activeTab === "plans" ? "勤務予定（明日以降）" : "勤務記録"}</h2>
                   <time dateTime={today()}>{fullDateLabel(today())}</time>
                 </div>
               </div>

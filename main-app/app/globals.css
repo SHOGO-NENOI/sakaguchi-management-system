@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/* v2.2.15: 今日の現場確認 */
+.today-plans { border-top: 4px solid var(--green); }
+.today-plan-list { display: grid; gap: 16px; }
+.today-plan-card { padding: 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--card); min-width: 0; }
+.today-plan-header, .today-plan-header > div { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.today-plan-header { justify-content: space-between; }
+.today-plan-header button, .today-plan-documents button { min-height: 44px; padding: 8px 16px; color: var(--ink); background: var(--soft); border: 1px solid var(--line); border-radius: 8px; }
+.today-plan-site { padding-top: 16px; margin-top: 16px; border-top: 1px solid var(--line); overflow-wrap: anywhere; }
+.today-plan-location { color: var(--muted); margin: 0 0 4px; }
+.today-plan-site h3 { margin: 0 0 12px; font-size: 1.2em; }
+.today-plan-site dl { margin: 0; display: grid; gap: 10px; }
+.today-plan-site dl > div { display: grid; grid-template-columns: 5em minmax(0, 1fr); gap: 8px; }
+.today-plan-site dt { color: var(--muted); }
+.today-plan-site dd { margin: 0; }
+.today-plan-site dd span { display: block; }
+.today-plan-map, .today-plan-documents a { display: flex; align-items: center; min-height: 48px; padding: 10px 12px; margin-top: 10px; color: var(--green-dark); background: var(--soft); border-radius: 8px; text-decoration: none; overflow-wrap: anywhere; }
+.today-plan-documents { margin-top: 12px; }
+.today-plan-documents summary { padding: 12px; min-height: 48px; cursor: pointer; border: 1px solid var(--line); border-radius: 8px; }
+.today-plan-note { white-space: pre-wrap; }
+
 :root {
   --ink: #17202a;
   --muted: #718096;
