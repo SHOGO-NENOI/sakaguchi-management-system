@@ -19,6 +19,9 @@
 .today-plan-documents { margin-top: 12px; }
 .today-plan-documents summary { padding: 12px; min-height: 48px; cursor: pointer; border: 1px solid var(--line); border-radius: 8px; }
 .today-plan-note { white-space: pre-wrap; }
+.today-plan-map-actions { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.today-plan-map-actions > a { flex: 1 1 220px; }
+.today-plan-map.today-plan-navigation { font-weight: 700; border: 1px solid var(--green); }
 
 :root {
   --ink: #17202a;

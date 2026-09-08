@@ -149,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.15";
+const APP_VERSION = "2.2.16";
 const APP_UPDATED_AT = "2026年9月8日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -536,6 +536,11 @@ function mapsUrl(
     address.trim() ||
     [location, site].filter(Boolean).join(" ");
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+}
+
+function navigationUrl(address: string, coordinates: string) {
+  const destination = coordinates.trim() || address.trim();
+  return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving&dir_action=navigate`;
 }
 
 async function addressFromCoordinates(coordinates: string) {
@@ -6395,7 +6400,12 @@ export default function Home() {
                                 {row.personnelNames && <div><dt>作業者</dt><dd>{row.personnelNames}</dd></div>}
                                 <div><dt>位置情報</dt><dd>{address || coordinates ? <>{address && <span>{address}</span>}{coordinates && <span>{coordinates}</span>}</> : "未登録"}</dd></div>
                               </dl>
-                              {(address || coordinates) && <a className="today-plan-map" href={mapsUrl(address, coordinates, row.location, row.site)} target="_blank" rel="noreferrer">🗺️ Googleマップで開く</a>}
+                              {(address.trim() || coordinates.trim()) && (
+                                <div className="today-plan-map-actions">
+                                  <a className="today-plan-map today-plan-navigation" href={navigationUrl(address, coordinates)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || "現場"}まで車でナビを開く`}>🚗 現場までナビ</a>
+                                  <a className="today-plan-map" href={mapsUrl(address, coordinates, row.location, row.site)} target="_blank" rel="noreferrer">🗺️ Googleマップで開く</a>
+                                </div>
+                              )}
                               {row.note && <p className="today-plan-note">{row.note}</p>}
                               {hasSite && (
                                 <details className="today-plan-documents" onToggle={(event) => { if (event.currentTarget.open) void loadSiteDocuments(cardKey); }}>
