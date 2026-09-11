@@ -24,36 +24,38 @@
 .today-plan-map.today-plan-navigation { font-weight: 700; border: 1px solid var(--green); }
 
 :root {
-  --ink: #17202a;
-  --muted: #718096;
-  --line: #e4e9ed;
-  --paper: #fff;
-  --card: #fff;
-  --input: #fff;
-  --text: #17202a;
-  --soft: #eef3f1;
-  --base: #f4f6f5;
-  --green: #1f6655;
-  --green-dark: #174d41;
-  --topbar: rgba(255, 255, 255, 0.92);
-  --page-start: #edf3f0;
-  --page-end: #f6f7f6;
+  --ink: #f4f8f6;
+  --muted: #9aaba3;
+  --line: #26362f;
+  --paper: #0d1915;
+  --card: #0d1915;
+  --input: #13211c;
+  --text: #f4f8f6;
+  --soft: #13211c;
+  --base: #07110e;
+  --green: #16d68f;
+  --green-dark: #0fae76;
+  --topbar: rgba(13, 25, 21, 0.94);
+  --page-start: #07110e;
+  --page-end: #07110e;
+  color-scheme: dark;
 }
 html[data-theme="blue"] {
-  --ink: #17243a;
-  --muted: #718096;
-  --line: #dfe7f1;
-  --paper: #fff;
-  --card: #fff;
-  --input: #fff;
-  --text: #17243a;
-  --soft: #edf4fa;
-  --base: #f3f7fb;
-  --green: #286b9b;
-  --green-dark: #1f5278;
-  --topbar: rgba(255, 255, 255, 0.94);
-  --page-start: #eaf3fa;
-  --page-end: #f6f8fb;
+  --ink: #f3f7ff;
+  --muted: #9cadc3;
+  --line: #254464;
+  --paper: #0c192b;
+  --card: #0c192b;
+  --input: #12243a;
+  --text: #f3f7ff;
+  --soft: #12243a;
+  --base: #07111f;
+  --green: #55a7ff;
+  --green-dark: #2c82df;
+  --topbar: rgba(12, 25, 43, 0.94);
+  --page-start: #07111f;
+  --page-end: #07111f;
+  color-scheme: dark;
 }
 :is(html[data-theme="dark"], html[data-theme="black"]) {
   color-scheme: dark;
@@ -4632,4 +4634,226 @@ html[data-font-size="large"] body { font-size: 1.08em; }
   .font-size-settings { grid-template-columns: 1fr; }
   .font-size-options { width: 100%; }
   .font-size-options button { flex: 1; }
+}
+
+/* v2.2.17: 坂口商会現場共有アプリと共通のUI */
+html[data-theme="purple"] {
+  --ink: #f4f0f8;
+  --muted: #ad9fba;
+  --line: #493263;
+  --paper: #1b1129;
+  --card: #1b1129;
+  --input: #281a3b;
+  --text: #f4f0f8;
+  --soft: #281a3b;
+  --base: #120b1c;
+  --green: #c28cff;
+  --green-dark: #d7b6ff;
+  --topbar: rgba(27, 17, 41, 0.94);
+  --page-start: #120b1c;
+  --page-end: #120b1c;
+  color-scheme: dark;
+}
+html[data-theme="brown"] {
+  --ink: #faf5ef;
+  --muted: #b8aa9a;
+  --line: #54402c;
+  --paper: #21180f;
+  --card: #21180f;
+  --input: #302317;
+  --text: #faf5ef;
+  --soft: #302317;
+  --base: #15100b;
+  --green: #d8a66d;
+  --green-dark: #efc18b;
+  --topbar: rgba(33, 24, 15, 0.94);
+  --page-start: #15100b;
+  --page-end: #15100b;
+  color-scheme: dark;
+}
+.skin-options button.purple > span { background: #c28cff; }
+.skin-options button.brown > span { background: #d8a66d; }
+
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 8% -10%, color-mix(in srgb, var(--green) 14%, transparent), transparent 34rem),
+    radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--green-dark) 9%, transparent), transparent 30rem),
+    var(--base);
+  background-attachment: fixed;
+  font-family: Inter, "Noto Sans JP", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+.topbar {
+  width: min(1180px, calc(100% - 36px));
+  height: auto;
+  min-height: 74px;
+  margin: 0 auto;
+  padding: 12px 0 14px;
+  background: transparent;
+  border-bottom-color: var(--line);
+  backdrop-filter: none;
+}
+.brand-mark {
+  width: 48px;
+  height: 48px;
+  border: 0;
+  background: transparent;
+  filter: drop-shadow(0 6px 10px #0008);
+}
+.brand-mark img { width: 44px; height: 44px; }
+.brand strong { font-size: 1.18rem; letter-spacing: 0; }
+.brand small { margin-top: 3px; font-size: 0.78rem; }
+.app-version {
+  color: var(--green);
+  background: color-mix(in srgb, var(--green) 10%, transparent);
+  border-color: color-mix(in srgb, var(--green) 45%, var(--line));
+}
+.calendar-connect {
+  min-height: 40px;
+  padding: 8px 12px;
+  color: var(--ink);
+  background: var(--soft);
+  border-color: var(--line);
+  border-radius: 9px;
+}
+.calendar-connect:hover { border-color: var(--green); transform: translateY(-1px); }
+.calendar-connect.connected { color: #04110c; background: var(--green); }
+.shell { width: min(1180px, calc(100% - 36px)); margin: 16px auto 60px; }
+.app-tabs {
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 24px;
+  padding: 6px;
+  background: color-mix(in srgb, var(--paper) 94%, transparent);
+  border-color: var(--line);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px #0005;
+  overflow: visible;
+}
+.app-tabs button {
+  min-width: 0;
+  min-height: 46px;
+  padding: 9px 5px;
+  border-radius: 11px;
+  font-size: 0.76rem;
+}
+.app-tabs button > span { display: inline-block; margin-right: 6px; font-size: 1rem; }
+.app-tabs button.active {
+  color: #04110c;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  box-shadow: none;
+}
+.entry-card,
+.history-section,
+.site-summary-section,
+.reminder-section,
+.shiftboard-section,
+.tools-section,
+.google-oauth-card,
+.settings-skin-card,
+.settings-google-card,
+.app-info-card,
+.master-management-card {
+  border-color: var(--line);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px #0003;
+}
+input, textarea, select {
+  border-radius: 11px;
+  border-color: var(--line);
+  background: var(--input);
+}
+input:focus, textarea:focus, select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 14%, transparent);
+  outline: none;
+}
+button, a { transition: transform 0.15s, border-color 0.15s, background-color 0.15s; }
+.today-plan-card,
+.history-item,
+.site-card,
+.tool-set-card,
+.transfer-row { border-radius: 13px; }
+.today-plan-map-actions { gap: 8px; }
+.today-plan-map-actions .today-plan-navigation {
+  color: #04110c;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border-color: transparent;
+  box-shadow: 0 5px 14px #0004;
+}
+.today-plan-map-actions .today-plan-map:not(.today-plan-navigation) {
+  color: #fff;
+  background: linear-gradient(135deg, #2688ff, #195dc5);
+  border: 1px solid #63aaff;
+  box-shadow: 0 5px 14px #0004;
+}
+.today-plan-documents > summary {
+  color: #211000;
+  background: linear-gradient(135deg, #ffba45, #dc7b1f);
+  border-color: #ffd07e;
+  font-weight: 800;
+  box-shadow: 0 5px 14px #0004;
+}
+.section-heading h2 { font-size: 1.45rem; }
+.eyebrow { color: var(--green); letter-spacing: 0.1em; }
+
+@media (max-width: 720px) {
+  body { padding-bottom: 132px; }
+  .topbar {
+    width: calc(100% - 20px);
+    min-height: 58px;
+    padding: 8px 0 10px;
+    align-items: center;
+  }
+  .brand { gap: 8px; min-width: 0; }
+  .brand-mark { width: 38px; height: 38px; flex: 0 0 38px; }
+  .brand-mark img { width: 36px; height: 36px; }
+  .brand strong { max-width: none; font-size: 0.94rem; }
+  .brand small { display: none; }
+  .app-version { font-size: 0.5rem; }
+  .header-actions { gap: 5px; }
+  .calendar-connect { min-height: 36px; padding: 6px 8px; font-size: 0.68rem; }
+  .shell { width: calc(100% - 16px); margin: 10px auto 20px; }
+  .app-tabs {
+    position: fixed;
+    left: 8px;
+    right: 8px;
+    bottom: 7px;
+    top: auto;
+    z-index: 100;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+    margin: 0;
+    padding: 5px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 8px 28px #000a;
+  }
+  .app-tabs button {
+    display: grid;
+    place-items: center;
+    align-content: center;
+    gap: 1px;
+    min-height: 52px;
+    padding: 4px 2px;
+    border-radius: 9px;
+    font-size: 0.64rem;
+    line-height: 1.1;
+    white-space: normal;
+  }
+  .app-tabs button > span { display: block; margin: 0; font-size: 0.95rem; line-height: 1; }
+  .entry-card, .history-section, .site-summary-section,
+  .reminder-section, .shiftboard-section, .tools-section { border-radius: 13px; }
+  .section-heading h2 { font-size: 1.14rem; }
+  .today-plan-map-actions { display: grid; grid-template-columns: 1fr 1fr; }
+  .today-plan-map-actions > a { min-width: 0; padding: 8px; font-size: 0.75rem; }
+  .today-plan-documents > summary { font-size: 0.78rem; }
+}
+
+@media (max-width: 390px) {
+  .brand strong { font-size: 0.85rem; }
+  .calendar-connect { padding-inline: 6px; font-size: 0.62rem; }
+  .app-tabs button { font-size: 0.6rem; }
 }

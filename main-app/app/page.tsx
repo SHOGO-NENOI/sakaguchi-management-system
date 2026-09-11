@@ -117,7 +117,7 @@ type ToolDragState = {
   active: boolean;
   timer: number;
 };
-type Skin = "green" | "blue" | "dark" | "black";
+type Skin = "green" | "blue" | "purple" | "brown" | "dark" | "black";
 type FontSize = "small" | "standard" | "large";
 type AppTab =
   | "entry"
@@ -149,8 +149,8 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.16";
-const APP_UPDATED_AT = "2026年9月8日";
+const APP_VERSION = "2.2.17";
+const APP_UPDATED_AT = "2026年9月11日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
@@ -1268,7 +1268,12 @@ export default function Home() {
         const savedSkin = localStorage.getItem(
           "sakaguchi-attendance-skin",
         ) as Skin | null;
-        if (savedSkin && ["green", "blue", "dark", "black"].includes(savedSkin))
+        if (
+          savedSkin &&
+          ["green", "blue", "purple", "brown", "dark", "black"].includes(
+            savedSkin,
+          )
+        )
           setSkin(savedSkin);
         const savedFontSize = localStorage.getItem(
           "sakaguchi-attendance-font-size",
@@ -3956,16 +3961,16 @@ export default function Home() {
         <nav className="app-tabs" aria-label="画面の切り替え">
           {(
             [
-              ["entry", "入力"],
-              ["history", "勤務記録"],
-              ["plans", "予定"],
-              ["summary", "集計"],
-              ["sites", "現場一覧"],
-              ["tools", "道具チェック"],
-              ["shiftboard", "シフトボード"],
-              ["settings", "設定"],
-            ] as [AppTab, string][]
-          ).map(([tab, label]) => (
+              ["entry", "＋", "入力"],
+              ["history", "◷", "勤務記録"],
+              ["plans", "▣", "予定"],
+              ["summary", "▥", "集計"],
+              ["sites", "⌂", "現場一覧"],
+              ["tools", "✓", "道具チェック"],
+              ["shiftboard", "▤", "シフトボード"],
+              ["settings", "⚙", "設定"],
+            ] as [AppTab, string, string][]
+          ).map(([tab, icon, label]) => (
             <button
               key={tab}
               type="button"
@@ -3973,6 +3978,7 @@ export default function Home() {
               aria-current={activeTab === tab ? "page" : undefined}
               onClick={() => setActiveTab(tab)}
             >
+              <span aria-hidden="true">{icon}</span>
               {label}
             </button>
           ))}
@@ -6258,6 +6264,8 @@ export default function Home() {
                 [
                   ["green", "グリーン"],
                   ["blue", "ブルー"],
+                  ["purple", "パープル"],
+                  ["brown", "ブラウン"],
                   ["dark", "ダーク"],
                   ["black", "ブラック"],
                 ] as [Skin, string][]
