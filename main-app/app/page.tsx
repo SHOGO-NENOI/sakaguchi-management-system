@@ -117,7 +117,7 @@ type ToolDragState = {
   active: boolean;
   timer: number;
 };
-type Skin = "green" | "blue" | "purple" | "brown" | "dark" | "black";
+type Skin = "green" | "black" | "blue" | "purple" | "brown";
 type FontSize = "small" | "standard" | "large";
 type AppTab =
   | "entry"
@@ -149,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.17";
+const APP_VERSION = "2.2.18";
 const APP_UPDATED_AT = "2026年9月11日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -1265,16 +1265,16 @@ export default function Home() {
           ].includes(savedTab)
         )
           setActiveTab(savedTab);
-        const savedSkin = localStorage.getItem(
-          "sakaguchi-attendance-skin",
-        ) as Skin | null;
+        const savedSkin = localStorage.getItem("sakaguchi-attendance-skin");
+        if (savedSkin === "dark") {
+          setSkin("green");
+          localStorage.setItem("sakaguchi-attendance-skin", "green");
+        }
         if (
           savedSkin &&
-          ["green", "blue", "purple", "brown", "dark", "black"].includes(
-            savedSkin,
-          )
+          ["green", "black", "blue", "purple", "brown"].includes(savedSkin)
         )
-          setSkin(savedSkin);
+          setSkin(savedSkin as Skin);
         const savedFontSize = localStorage.getItem(
           "sakaguchi-attendance-font-size",
         ) as FontSize | null;
@@ -3923,11 +3923,11 @@ export default function Home() {
   const needsTime = ["1日", "半日"].includes(form.type);
 
   return (
-    <main>
+    <main className="app-shell">
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">
-            <img src="/sakaguchi-mark.png" alt="坂口商会" />
+            <img src="/sakaguchi-icon.png" alt="坂口商会" />
           </span>
           <div>
             <div className="brand-title">
@@ -6263,11 +6263,10 @@ export default function Home() {
               {(
                 [
                   ["green", "グリーン"],
+                  ["black", "ブラック"],
                   ["blue", "ブルー"],
                   ["purple", "パープル"],
                   ["brown", "ブラウン"],
-                  ["dark", "ダーク"],
-                  ["black", "ブラック"],
                 ] as [Skin, string][]
               ).map(([value, label]) => (
                 <button

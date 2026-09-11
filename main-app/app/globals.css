@@ -4857,3 +4857,212 @@ button, a { transition: transform 0.15s, border-color 0.15s, background-color 0.
   .calendar-connect { padding-inline: 6px; font-size: 0.62rem; }
   .app-tabs button { font-size: 0.6rem; }
 }
+
+/* v2.2.18: 現場共有アプリの外観を全画面へ適用 */
+html[data-theme="black"] {
+  --ink: #f4f4f4;
+  --muted: #a5a5a5;
+  --line: #303030;
+  --paper: #101010;
+  --card: #101010;
+  --input: #181818;
+  --text: #f4f4f4;
+  --soft: #181818;
+  --base: #070707;
+  --green: #f1f1f1;
+  --green-dark: #bdbdbd;
+  --topbar: rgba(16, 16, 16, 0.94);
+  --page-start: #070707;
+  --page-end: #070707;
+}
+html[data-theme="purple"] { --green-dark: #9258d2; }
+html[data-theme="brown"] { --green-dark: #ae7945; }
+html[data-font-size="small"] { font-size: 13px; }
+html[data-font-size="standard"] { font-size: 15px; }
+html[data-font-size="large"] { font-size: 17px; }
+html[data-font-size] body { font-size: 1em; }
+
+.app-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 16px 18px 50px;
+}
+.app-shell > .topbar { width: 100%; }
+.app-shell > .shell { width: 100%; }
+.entry-card,
+.history-section,
+.site-summary-section,
+.reminder-section,
+.shiftboard-section,
+.tools-section,
+.google-oauth-card,
+.settings-skin-card,
+.settings-google-card,
+.app-info-card,
+.master-management-card,
+.today-plan-card,
+.site-pair-card,
+.site-card,
+.tool-set-card,
+.transfer-row,
+.summary-grid article,
+.monthly-rankings article {
+  color: var(--text);
+  background: linear-gradient(135deg, var(--paper), color-mix(in srgb, var(--input) 58%, var(--paper)));
+  border-color: var(--line);
+}
+.entry-card { max-width: 820px; margin-inline: auto; padding: 18px; }
+.history-section,
+.site-summary-section,
+.shiftboard-section,
+.tools-section { padding: 18px; }
+.history-section,
+.site-summary-section,
+.shiftboard-section { margin-block: 20px; }
+.section-heading { align-items: flex-end; gap: 16px; margin: 8px 0 18px; }
+.section-heading h2 { margin: 2px 0 0; font-size: 1.4rem; }
+.heading-title-line { gap: 8px 12px; }
+.heading-title-line time,
+.count,
+label > span,
+legend,
+em,
+.record-main small,
+.site-card-identity small,
+.site-municipality-heading strong { color: var(--muted); }
+
+input,
+textarea,
+select,
+.month-input,
+.year-input {
+  color: var(--text);
+  background: var(--input);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 11px 13px;
+}
+.segmented,
+.view-switch,
+.summary-period-switch {
+  background: var(--paper);
+  border-color: var(--line);
+  border-radius: 12px;
+}
+.segmented button,
+.view-switch button,
+.summary-period-switch button,
+.work-options button,
+.trip-options button,
+.dinner-options button,
+.personnel-options button {
+  color: var(--muted);
+  background: var(--input);
+  border-color: var(--line);
+  border-radius: 999px;
+}
+.segmented button.active,
+.view-switch button.active,
+.summary-period-switch button.active,
+.work-options button.selected,
+.trip-options button.selected,
+.dinner-options button.selected,
+.personnel-options button.selected {
+  color: #04110c;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border-color: var(--green);
+  font-weight: 800;
+}
+.time-panel,
+.site-time-fields,
+.daily-extra-summary,
+.trip-field,
+.site-work-field,
+.personnel-options,
+.last-visit,
+.last-visit-large,
+.off-entry-panel,
+.holiday-range-panel,
+.transfer-guide,
+.pay-estimate-card,
+.calendar-title-example {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
+.primary,
+.record-submit,
+.setup-button,
+.tool-add-item button,
+.tool-add-set button {
+  color: #04110c;
+  background: linear-gradient(135deg, var(--green), var(--green-dark));
+  border-color: transparent;
+  border-radius: 11px;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--green) 14%, transparent);
+}
+.add-site,
+.basic-plan-button,
+.holiday-range-button,
+.actions button,
+.site-card-actions button,
+.site-location-buttons button,
+.tools-footer button {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+  border-radius: 9px;
+}
+.add-site:hover,
+.actions button:hover,
+.site-card-actions button:hover,
+.site-location-buttons button:hover { border-color: var(--green); }
+.actions button.delete,
+.danger,
+.remove-site { color: #ff7c7c; border-color: color-mix(in srgb, #ff7c7c 45%, var(--line)); }
+.empty { padding: 44px 16px; color: var(--muted); text-align: center; }
+.site-card { overflow: hidden; box-shadow: 0 8px 20px #0002; }
+.site-card:hover { border-color: color-mix(in srgb, var(--green) 60%, var(--line)); transform: translateY(-1px); }
+.site-card-row:hover,
+.site-card-expanded,
+.site-location-editor,
+.site-name-editor { background: var(--input); }
+html body .history-item {
+  background: linear-gradient(135deg, var(--paper), color-mix(in srgb, var(--input) 58%, var(--paper))) !important;
+  border-color: var(--line) !important;
+}
+.calendar-wrap,
+.calendar-grid,
+.calendar-day { border-color: var(--line); }
+.calendar-day { background: var(--paper); }
+.calendar-day.has-entry { background: var(--input); }
+.record-main p { color: var(--text); }
+.record-extra span { color: var(--text); background: var(--input); border: 1px solid var(--line); }
+.record-map-link {
+  color: #fff;
+  background: linear-gradient(135deg, #2688ff, #195dc5);
+  border-color: #63aaff;
+}
+.planned-badge { color: #04110c; background: var(--green); }
+
+@media (max-width: 720px) {
+  html[data-font-size="small"] { font-size: 13px; }
+  html[data-font-size="standard"] { font-size: 14px; }
+  html[data-font-size="large"] { font-size: 16px; }
+  .app-shell { padding: 7px 8px 132px; }
+  .app-shell > .topbar { width: 100%; }
+  .app-shell > .shell { width: 100%; margin-top: 8px; }
+  .entry-card,
+  .history-section,
+  .site-summary-section,
+  .shiftboard-section,
+  .tools-section { padding: 11px; }
+  .section-heading { gap: 8px; margin: 6px 0 12px; }
+  .section-heading h2 { font-size: 1.14rem; }
+  input, textarea, select, .month-input, .year-input { padding: 8px 9px; border-radius: 8px; }
+  .field-grid { gap: 10px; }
+  .site-pair-card { padding: 10px; border-radius: 12px; }
+  .history-item { padding: 9px; border-radius: 10px; }
+  .site-card { border-radius: 10px; }
+  .today-plan-card { padding: 11px; border-radius: 12px; }
+}
