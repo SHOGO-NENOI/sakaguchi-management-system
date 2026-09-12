@@ -5066,3 +5066,87 @@ html body .history-item {
   .site-card { border-radius: 10px; }
   .today-plan-card { padding: 11px; border-radius: 12px; }
 }
+
+
+/* v2.2.19: pair foreground/background colors across every skin.
+   html body overrides legacy black-only rules without changing layout. */
+:root { --on-accent: #04110c; }
+html body :is(.site-master-toolbar button, .site-master-form-actions .primary,
+  .master-add button, .master-list button, .archived-sites button,
+  .sync-manager-actions .primary, .reminder-section button.enabled,
+  .settings-google-card button, .primary, .record-submit, .setup-button,
+  .tool-add-item button, .tool-add-set button) {
+  color: var(--on-accent);
+  background: var(--green);
+  border-color: var(--green);
+}
+html body :is(.app-tabs button.active, .segmented button.active,
+  .view-switch button.active, .summary-period-switch button.active,
+  .work-options button.selected, .trip-options button.selected,
+  .dinner-options button.selected, .personnel-options button.selected) {
+  color: var(--on-accent);
+  background: var(--green);
+  border-color: var(--green);
+}
+html body :is(.work-options button.selected, .trip-options button.selected,
+  .dinner-options button.selected, .personnel-options button.selected,
+  .segmented button.active) :is(span, small, b, strong) { color: inherit; }
+html body :is(.plan-bulk-toolbar, .sync-manager-actions button:not(.primary),
+  .sync-detail button, .summary-visibility-settings > summary,
+  .summary-visibility-settings > div, .transfer-groups article,
+  .transfer-date-column > label, .transfer-date-column > span,
+  .completed-transfer-list, .pay-settings > summary,
+  .site-location-editor, .site-name-editor, .site-card-expanded,
+  .site-card-row:hover, .personnel-options, .time-panel,
+  .site-time-fields, .daily-extra-summary, .last-visit, .last-visit-large,
+  .sync-toggle, .reminder-status, .calendar-title-example) {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
+html body :is(.plan-bulk-toolbar label, .summary-visibility-settings label,
+  .site-card-detail p, .site-card-detail li, .calendar-setup li,
+  .calendar-setup li strong, .record-main p) { color: var(--text); }
+html body :is(.plan-bulk-toolbar span, .sync-live) { color: var(--green); }
+html body :is(input, textarea, select) {
+  color: var(--text);
+  background-color: var(--input);
+  border-color: var(--line);
+}
+html body :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+html body :is(.trip-options button, .dinner-options button,
+  .work-options button, .personnel-options button):not(.selected) {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
+html body :is(.skin-options button, .font-size-options button) {
+  color: var(--text);
+  background: var(--input);
+}
+html body :is(.skin-options button.active, .font-size-options button.active) {
+  color: var(--green);
+  background: var(--paper);
+  border-color: var(--green);
+}
+html body :is(.today-plan-navigation, .today-plan-map.today-plan-navigation) {
+  color: var(--on-accent);
+  background: var(--green);
+}
+html body :is(.site-card-actions button, .site-location-buttons button,
+  .site-card-location > button, .actions button:not(.delete)) {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
+html body :is(.sync-stat-grid .warning strong, .error-message) { color: #ffbd76; }
+html body .record-map-link {
+  color: #fff;
+  background: #195dc5;
+  border-color: #63aaff;
+}
+html body .record-map-link small { color: #fff; background: #195dc5; }
+html body :is(.calendar-connect.connected, .planned-badge) {
+  color: var(--on-accent); background: var(--green);
+}
+
