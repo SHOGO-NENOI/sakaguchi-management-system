@@ -5158,3 +5158,41 @@ html body :is(.calendar-connect.connected, .planned-badge) {
   color: var(--on-accent); background: var(--green);
 }
 
+/* v2.2.21: keep entered text visible in every editable control.
+   Several older component rules used a white background with higher specificity. */
+html body :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select
+) {
+  color: var(--text) !important;
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--green);
+  background: var(--input) !important;
+  border-color: var(--line) !important;
+}
+html body :is(
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select
+):focus {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--green) 22%, transparent);
+}
+html body :is(input, textarea)::placeholder {
+  color: var(--muted) !important;
+  -webkit-text-fill-color: var(--muted) !important;
+  opacity: 1;
+}
+html body select option {
+  color: var(--text);
+  background: var(--input);
+}
+html body :is(input, textarea):-webkit-autofill,
+html body :is(input, textarea):-webkit-autofill:hover,
+html body :is(input, textarea):-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text) !important;
+  caret-color: var(--green);
+  box-shadow: 0 0 0 1000px var(--input) inset !important;
+}
+
