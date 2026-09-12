@@ -5196,3 +5196,23 @@ html body :is(input, textarea):-webkit-autofill:focus {
   box-shadow: 0 0 0 1000px var(--input) inset !important;
 }
 
+/* v2.2.22: remove the legacy white-only dinner/hotel summary cards. */
+html body .summary-grid :is(.dinner-summary, .hotel-summary) {
+  color: var(--text) !important;
+  background: linear-gradient(
+    135deg,
+    var(--paper),
+    color-mix(in srgb, var(--input) 58%, var(--paper))
+  ) !important;
+  border-color: var(--line) !important;
+}
+html body .summary-grid :is(.dinner-summary, .hotel-summary) small {
+  color: var(--muted) !important;
+}
+html body .summary-grid :is(.dinner-summary, .hotel-summary) strong {
+  color: var(--text) !important;
+}
+html body .summary-grid :is(.dinner-summary, .hotel-summary) strong span {
+  color: var(--muted) !important;
+}
+
