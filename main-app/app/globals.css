@@ -5075,13 +5075,16 @@ html body :is(.site-master-toolbar button, .site-master-form-actions .primary,
   .master-add button, .master-list button, .archived-sites button,
   .sync-manager-actions .primary, .reminder-section button.enabled,
   .settings-google-card button, .primary, .record-submit, .setup-button,
-  .tool-add-item button, .tool-add-set button) {
+  .tool-add-item button, .tool-add-set button,
+  .holiday-range-panel > button, .site-name-editor button,
+  .site-location-buttons .save-location, .site-documents > header label) {
   color: var(--on-accent);
   background: var(--green);
   border-color: var(--green);
 }
 html body :is(.app-tabs button.active, .segmented button.active,
   .view-switch button.active, .summary-period-switch button.active,
+  .tool-category-tabs button.active,
   .work-options button.selected, .trip-options button.selected,
   .dinner-options button.selected, .personnel-options button.selected) {
   color: var(--on-accent);
@@ -5091,6 +5094,11 @@ html body :is(.app-tabs button.active, .segmented button.active,
 html body :is(.work-options button.selected, .trip-options button.selected,
   .dinner-options button.selected, .personnel-options button.selected,
   .segmented button.active) :is(span, small, b, strong) { color: inherit; }
+html body :is(.site-number, .pay-icon, .work-options button.selected .check) {
+  color: var(--on-accent);
+  background: var(--green);
+  border-color: var(--green);
+}
 html body :is(.plan-bulk-toolbar, .sync-manager-actions button:not(.primary),
   .sync-detail button, .summary-visibility-settings > summary,
   .summary-visibility-settings > div, .transfer-groups article,

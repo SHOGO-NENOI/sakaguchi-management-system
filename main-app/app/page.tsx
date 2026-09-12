@@ -149,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.19";
+const APP_VERSION = "2.2.20";
 const APP_UPDATED_AT = "2026年9月12日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
