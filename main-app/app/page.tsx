@@ -149,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.23";
+const APP_VERSION = "2.2.24";
 const APP_UPDATED_AT = "2026年9月13日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -1417,9 +1417,35 @@ export default function Home() {
   const todayEntries = entries
     .filter((entry) => entry.date === currentDate)
     .sort((a, b) => a.start.localeCompare(b.start));
+  const tomorrowDate = nextDate(currentDate);
+  const tomorrowEntries = entries
+    .filter((entry) => entry.date === tomorrowDate)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const featuredPlanGroups = [
+    {
+      id: "today-plans-title",
+      title: "本日の予定",
+      date: currentDate,
+      entries: todayEntries,
+      loading: "本日の予定を読み込んでいます…",
+      emptyTitle: "本日の予定はありません",
+      emptyHelp: "入力タブから本日の勤務内容を登録できます。",
+    },
+    {
+      id: "tomorrow-plans-title",
+      title: "明日の予定",
+      date: tomorrowDate,
+      entries: tomorrowEntries,
+      loading: "明日の予定を読み込んでいます…",
+      emptyTitle: "明日の予定はありません",
+      emptyHelp: "入力タブから明日の勤務内容を登録できます。",
+    },
+  ];
   const visibleRecordEntries =
     activeTab === "plans"
-      ? [...plannedMonthEntries].sort((a, b) => a.date.localeCompare(b.date))
+      ? plannedMonthEntries
+          .filter((entry) => entry.date > tomorrowDate)
+          .sort((a, b) => a.date.localeCompare(b.date))
       : completedMonthEntries;
   const shiftBoardEntries = useMemo(
     () => [...monthEntries].sort((a, b) => a.date.localeCompare(b.date)),
@@ -6359,20 +6385,20 @@ export default function Home() {
           </details>
         )}
 
-        {activeTab === "plans" && (
-          <section className="history-section today-plans" aria-labelledby="today-plans-title">
+        {activeTab === "plans" && featuredPlanGroups.map((group) => (
+          <section className="history-section today-plans" aria-labelledby={group.id} key={group.id}>
             <div className="section-heading">
               <div className="heading-title-line">
-                <h2 id="today-plans-title">本日の予定</h2>
-                <time dateTime={currentDate}>{fullDateLabel(currentDate)}</time>
+                <h2 id={group.id}>{group.title}</h2>
+                <time dateTime={group.date}>{fullDateLabel(group.date)}</time>
               </div>
-              <span className="count">{todayEntries.length}件</span>
+              <span className="count">{group.entries.length}件</span>
             </div>
-            {!ready ? <p role="status">本日の予定を読み込んでいます…</p> : todayEntries.length === 0 ? (
-              <div className="empty"><h3>本日の予定はありません</h3><p>入力タブから本日の勤務内容を登録できます。</p></div>
+            {!ready ? <p role="status">{group.loading}</p> : group.entries.length === 0 ? (
+              <div className="empty"><h3>{group.emptyTitle}</h3><p>{group.emptyHelp}</p></div>
             ) : (
               <div className="today-plan-list">
-                {todayEntries.map((entry) => (
+                {group.entries.map((entry) => (
                   <article className="today-plan-card" key={entry.id}>
                     <header className="today-plan-header">
                       <div><span className={`type-badge type-${entry.type}`}>{entry.type}</span>{entry.type !== "休み" && <strong>{formatEntryTimes(entry)}</strong>}</div>
@@ -6426,7 +6452,7 @@ export default function Home() {
               </div>
             )}
           </section>
-        )}
+        ))}
         {(activeTab === "history" || activeTab === "plans") && (
           <section className="history-section">
             <div className="section-heading history-heading">
@@ -6437,7 +6463,7 @@ export default function Home() {
                     : "ATTENDANCE RECORDS"}
                 </span>
                 <div className="heading-title-line">
-                  <h2>{activeTab === "plans" ? "勤務予定（明日以降）" : "勤務記録"}</h2>
+                  <h2>{activeTab === "plans" ? "それ以降の予定" : "勤務記録"}</h2>
                   <time dateTime={today()}>{fullDateLabel(today())}</time>
                 </div>
               </div>
