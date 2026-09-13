@@ -1,8 +1,10 @@
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { toolChecks, toolItems, toolSets } from "../../../db/schema";
 
 type ToolCategory = "通常業務" | "出張";
+
+const PERSISTENT_CHECK_DATE = "0001-01-01";
 
 const defaultSets: { category: ToolCategory; name: string; items: string[] }[] = [
   { category: "通常業務", name: "共通基本セット", items: ["ヘルメット", "安全靴", "作業手袋", "保護メガネ", "救急セット", "飲料"] },
@@ -13,10 +15,6 @@ const defaultSets: { category: ToolCategory; name: string; items: string[] }[] =
   { category: "出張", name: "出張基本セット", items: ["作業着", "着替え", "洗面用具", "充電器", "常備薬"] },
   { category: "出張", name: "車両・書類セット", items: ["運転免許証", "ETCカード", "給油カード", "宿泊先情報"] },
 ];
-
-function validDate(value: unknown) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
-}
 
 async function seedDefaults() {
   const db = await getDb();
@@ -29,18 +27,37 @@ async function seedDefaults() {
   }
 }
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     await seedDefaults();
     const db = await getDb();
-    const date = validDate(new URL(request.url).searchParams.get("date"));
-    if (!date) return Response.json({ error: "日付が正しくありません" }, { status: 400 });
     const [sets, items, checks] = await Promise.all([
       db.select().from(toolSets).where(eq(toolSets.archivedAt, "")).orderBy(asc(toolSets.sortOrder), asc(toolSets.id)),
       db.select().from(toolItems).where(eq(toolItems.archivedAt, "")).orderBy(asc(toolItems.sortOrder), asc(toolItems.id)),
-      db.select().from(toolChecks).where(eq(toolChecks.checkDate, date)),
+      db.select().from(toolChecks).orderBy(desc(toolChecks.checkDate), desc(toolChecks.id)),
     ]);
-    const checkedIds = new Set(checks.filter((check) => check.checked).map((check) => check.itemId));
+    const persistentChecks = new Map(
+      checks
+        .filter((check) => check.checkDate === PERSISTENT_CHECK_DATE)
+        .map((check) => [check.itemId, check.checked]),
+    );
+    const latestLegacyChecks = new Map<number, boolean>();
+    checks.forEach((check) => {
+      if (
+        check.checkDate !== PERSISTENT_CHECK_DATE &&
+        !latestLegacyChecks.has(check.itemId)
+      )
+        latestLegacyChecks.set(check.itemId, check.checked);
+    });
+    const checkedIds = new Set(
+      items
+        .filter((item) =>
+          persistentChecks.has(item.id)
+            ? persistentChecks.get(item.id)
+            : latestLegacyChecks.get(item.id),
+        )
+        .map((item) => item.id),
+    );
     return Response.json({ sets: sets.map((set) => ({ ...set, items: items.filter((item) => item.setId === set.id).map((item) => ({ ...item, checked: checkedIds.has(item.id) })) })) });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "道具一覧を読み込めませんでした" }, { status: 500 });
@@ -49,7 +66,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json() as { action?: string; category?: ToolCategory; name?: string; setId?: number; itemId?: number; checked?: boolean; date?: string; itemIds?: number[]; reorderType?: "set" | "item"; orderedIds?: number[] };
+    const body = await request.json() as { action?: string; category?: ToolCategory; name?: string; setId?: number; itemId?: number; checked?: boolean; itemIds?: number[]; reorderType?: "set" | "item"; orderedIds?: number[] };
     const db = await getDb();
     if (body.action === "add_set") {
       if (!body.name?.trim() || !["通常業務", "出張"].includes(body.category ?? "")) throw new Error("セット名を入力してください");
@@ -76,16 +93,14 @@ export async function POST(request: Request) {
       return Response.json({ item: { ...item, checked: false } }, { status: 201 });
     }
     if (body.action === "toggle") {
-      const date = validDate(body.date);
-      if (!body.itemId || !date) throw new Error("チェック対象が見つかりません");
-      await db.insert(toolChecks).values({ checkDate: date, itemId: body.itemId, checked: Boolean(body.checked) }).onConflictDoUpdate({ target: [toolChecks.checkDate, toolChecks.itemId], set: { checked: Boolean(body.checked) } });
+      if (!body.itemId) throw new Error("チェック対象が見つかりません");
+      await db.insert(toolChecks).values({ checkDate: PERSISTENT_CHECK_DATE, itemId: body.itemId, checked: Boolean(body.checked) }).onConflictDoUpdate({ target: [toolChecks.checkDate, toolChecks.itemId], set: { checked: Boolean(body.checked) } });
       return Response.json({ ok: true });
     }
     if (body.action === "reset") {
-      const date = validDate(body.date);
       const itemIds = [...new Set((body.itemIds ?? []).filter((id) => Number.isInteger(id) && id > 0))].slice(0, 500);
-      if (!date) throw new Error("日付が正しくありません");
-      if (itemIds.length) await db.delete(toolChecks).where(and(eq(toolChecks.checkDate, date), inArray(toolChecks.itemId, itemIds)));
+      if (itemIds.length)
+        await db.insert(toolChecks).values(itemIds.map((itemId) => ({ checkDate: PERSISTENT_CHECK_DATE, itemId, checked: false }))).onConflictDoUpdate({ target: [toolChecks.checkDate, toolChecks.itemId], set: { checked: false } });
       return Response.json({ ok: true });
     }
     if (body.action === "reorder") {

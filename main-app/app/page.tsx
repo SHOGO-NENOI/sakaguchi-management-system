@@ -149,7 +149,7 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.24";
+const APP_VERSION = "2.2.25";
 const APP_UPDATED_AT = "2026年9月13日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -3479,7 +3479,7 @@ export default function Home() {
     setToolsReady(false);
     setToolMessage("");
     try {
-      const response = await fetch(`/api/tools?date=${today()}`);
+      const response = await fetch("/api/tools");
       const data = await response.json();
       if (!response.ok)
         throw new Error(data.error || "道具一覧を読み込めませんでした");
@@ -3570,7 +3570,6 @@ export default function Home() {
         body: JSON.stringify({
           action: "toggle",
           itemId: item.id,
-          date: today(),
           checked,
         }),
       });
@@ -3727,14 +3726,14 @@ export default function Home() {
     const itemIds = visibleToolItems.map((item) => item.id);
     if (
       !itemIds.length ||
-      !window.confirm(`${toolCategory}の今日のチェックをすべて外しますか？`)
+      !window.confirm(`${toolCategory}のチェックをすべて外しますか？`)
     )
       return;
     try {
       const response = await fetch("/api/tools", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "reset", date: today(), itemIds }),
+        body: JSON.stringify({ action: "reset", itemIds }),
       });
       if (!response.ok) throw new Error("チェックをリセットできませんでした");
       const ids = new Set(itemIds);
@@ -3746,7 +3745,7 @@ export default function Home() {
           ),
         })),
       );
-      setToolMessage("今日のチェックをリセットしました");
+      setToolMessage("チェックをリセットしました");
     } catch (error) {
       setToolMessage(
         error instanceof Error
@@ -6066,7 +6065,7 @@ export default function Home() {
               <div>
                 <span className="eyebrow">TOOL CHECKLIST</span>
                 <h2>道具チェック表</h2>
-                <p>{formatDate(today())}の準備状況</p>
+                <p>現在の準備状況</p>
               </div>
               <div className="tools-progress">
                 <strong>
@@ -6102,7 +6101,8 @@ export default function Home() {
               />
             </div>
             <p className="tool-drag-hint">
-              スマホでは「≡」を長押しして上下に移動できます
+              チェックは日をまたいでも保持されます。使用後は手動でリセットしてください。
+              <br />スマホでは「≡」を長押しして上下に移動できます
             </p>
             {!toolsReady ? (
               <button className="tools-load" type="button" onClick={loadTools}>
@@ -6263,7 +6263,7 @@ export default function Home() {
             </div>
             <div className="tools-footer">
               <button type="button" onClick={resetToolChecks}>
-                今日のチェックをリセット
+                チェックを手動でリセット
               </button>
               {toolMessage && <p>{toolMessage}</p>}
             </div>
@@ -6903,4 +6903,3 @@ export default function Home() {
     </main>
   );
 }
-
