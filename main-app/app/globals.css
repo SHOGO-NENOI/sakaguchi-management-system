@@ -5216,3 +5216,69 @@ html body .summary-grid :is(.dinner-summary, .hotel-summary) strong span {
   color: var(--muted) !important;
 }
 
+/* v2.2.23: use each skin's paired foreground and background colors.
+   This replaces pale legacy badges and fixed light-theme text colors. */
+html body .today,
+html body :is(label > span, legend, .site-pair-inputs label span,
+  .site-time-fields label span, .site-address, .site-coordinates,
+  .site-card-identity small, .site-row-last small, .site-stats dt,
+  .site-card-detail > strong, .summary-grid small,
+  .summary-grid strong span, .ranking-title span,
+  .transfer-date-column em, .reminder-section p,
+  .reminder-section .reminder-note) {
+  color: var(--muted) !important;
+}
+
+html body :is(.type-badge, .transfer-progress, .map-button) {
+  color: var(--on-accent) !important;
+  background: var(--green) !important;
+  border-color: var(--green) !important;
+}
+
+html body :is(.type-badge.type-休み, .type-badge.type-欠勤,
+  .transfer-label.off, .transfer-kind.off) {
+  color: var(--text) !important;
+  background: var(--input) !important;
+  border: 1px solid var(--line);
+}
+
+html body :is(.summary-grid article, .monthly-rankings article,
+  .site-card, .transfer-row) {
+  color: var(--text);
+  background: var(--paper);
+  border-color: var(--line);
+}
+
+html body :is(.ranking-title, .ranking-title strong,
+  .ranking-content, .ranking-content li > span,
+  .site-row-last strong, .site-stats dd,
+  .site-card-detail p, .site-card-detail li,
+  .site-documents > header strong) {
+  color: var(--text) !important;
+}
+
+html body :is(.pay-estimate-main strong, .pay-breakdown,
+  .pay-input-wrap b, .pay-settings p) {
+  color: var(--text) !important;
+}
+
+html body .monthly-rankings li span::before { color: var(--muted); }
+html body .summary-icon.amber { color: #704700; }
+
+html body :is(.site-card-expanded, .site-documents,
+  .transfer-guide, .transfer-date-column > label,
+  .transfer-date-column > span) {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
+
+html body .reminder-section button:disabled {
+  color: var(--text) !important;
+  background: var(--input) !important;
+  border-color: var(--line) !important;
+  opacity: 1;
+}
+
+html body .transfer-row > small { color: var(--green-dark); }
+

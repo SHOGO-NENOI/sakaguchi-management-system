@@ -149,8 +149,8 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.22";
-const APP_UPDATED_AT = "2026年9月12日";
+const APP_VERSION = "2.2.23";
+const APP_UPDATED_AT = "2026年9月13日";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
@@ -541,6 +541,24 @@ function mapsUrl(
 function navigationUrl(address: string, coordinates: string) {
   const destination = coordinates.trim() || address.trim();
   return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&travelmode=driving&dir_action=navigate`;
+}
+
+const COORDINATE_PAIR_PATTERN =
+  /[-+]?\d{1,2}(?:\.\d+)?\s*[,，]\s*[-+]?\d{1,3}(?:\.\d+)?/;
+
+function positionInputValue(address: string, coordinates: string) {
+  return [address.trim(), coordinates.trim()].filter(Boolean).join(" ／ ");
+}
+
+function parsePositionInput(value: string) {
+  const coordinateMatch = value.match(COORDINATE_PAIR_PATTERN);
+  const coordinates = coordinateMatch?.[0].replace("，", ",") ?? "";
+  const address = coordinateMatch
+    ? value
+        .replace(coordinateMatch[0], "")
+        .replace(/^[\s／/|｜・]+|[\s／/|｜・]+$/g, "")
+    : value.trim();
+  return { address, coordinates };
 }
 
 async function addressFromCoordinates(coordinates: string) {
@@ -3257,16 +3275,17 @@ export default function Home() {
     setForm({ ...form, location: next.join(SITE_SEPARATOR) });
   }
 
-  function updateAddress(index: number, value: string) {
-    const next = [...formAddresses];
-    next[index] = value;
-    setForm({ ...form, address: next.join(SITE_SEPARATOR) });
-  }
-
-  function updateCoordinates(index: number, value: string) {
-    const next = [...formCoordinates];
-    next[index] = value;
-    setForm({ ...form, coordinates: next.join(SITE_SEPARATOR) });
+  function updatePosition(index: number, value: string) {
+    const { address, coordinates } = parsePositionInput(value);
+    const nextAddresses = [...formAddresses];
+    const nextCoordinates = [...formCoordinates];
+    nextAddresses[index] = address;
+    nextCoordinates[index] = coordinates;
+    setForm({
+      ...form,
+      address: nextAddresses.join(SITE_SEPARATOR),
+      coordinates: nextCoordinates.join(SITE_SEPARATOR),
+    });
   }
 
   function getCurrentAddress(index: number) {
@@ -4533,30 +4552,19 @@ export default function Home() {
                                 </div>
                                 <label className="wide-input">
                                   <span>
-                                    住所 <em>現在地から自動入力できます</em>
+                                    位置情報{" "}
+                                    <em>住所または緯度・経度を入力</em>
                                   </span>
                                   <input
-                                    aria-label={`住所 ${index + 1}`}
+                                    aria-label={`位置情報 ${index + 1}`}
                                     list="address-history"
-                                    placeholder="例：熊本県熊本市東区〇〇1-2-3"
-                                    value={address}
+                                    placeholder="例：熊本県熊本市東区〇〇1-2-3 または 32.8031, 130.7079"
+                                    value={positionInputValue(
+                                      address,
+                                      coordinates,
+                                    )}
                                     onChange={(e) =>
-                                      updateAddress(index, e.target.value)
-                                    }
-                                  />
-                                </label>
-                                <label className="wide-input">
-                                  <span>
-                                    緯度・経度{" "}
-                                    <em>Googleマップから貼り付け可</em>
-                                  </span>
-                                  <input
-                                    aria-label={`緯度・経度 ${index + 1}`}
-                                    inputMode="decimal"
-                                    placeholder="例：32.8031, 130.7079"
-                                    value={coordinates}
-                                    onChange={(e) =>
-                                      updateCoordinates(index, e.target.value)
+                                      updatePosition(index, e.target.value)
                                     }
                                   />
                                 </label>
@@ -5551,29 +5559,20 @@ export default function Home() {
                     />
                   </label>
                   <label className="wide">
-                    <span>住所</span>
+                    <span>位置情報（住所 または 緯度・経度）</span>
                     <input
-                      value={newSiteDraft.address}
-                      onChange={(e) =>
+                      value={positionInputValue(
+                        newSiteDraft.address,
+                        newSiteDraft.coordinates,
+                      )}
+                      onChange={(e) => {
+                        const position = parsePositionInput(e.target.value);
                         setNewSiteDraft({
                           ...newSiteDraft,
-                          address: e.target.value,
-                        })
-                      }
-                      placeholder="例：熊本県熊本市北区〇〇1-2-3"
-                    />
-                  </label>
-                  <label className="wide">
-                    <span>緯度・経度</span>
-                    <input
-                      value={newSiteDraft.coordinates}
-                      onChange={(e) =>
-                        setNewSiteDraft({
-                          ...newSiteDraft,
-                          coordinates: e.target.value,
-                        })
-                      }
-                      placeholder="例：32.803100, 130.707900"
+                          ...position,
+                        });
+                      }}
+                      placeholder="住所 または 32.803100, 130.707900"
                     />
                   </label>
                   <div className="site-master-form-actions">
@@ -5813,33 +5812,25 @@ export default function Home() {
                                               />
                                             </label>
                                             <label>
-                                              <span>住所</span>
+                                              <span>
+                                                位置情報（住所 または 緯度・経度）
+                                              </span>
                                               <input
-                                                placeholder="例：熊本市北区〇〇1-2-3"
-                                                value={
-                                                  siteLocationDraft.address
-                                                }
-                                                onChange={(e) =>
+                                                placeholder="住所 または 32.803100, 130.707900"
+                                                value={positionInputValue(
+                                                  siteLocationDraft.address,
+                                                  siteLocationDraft.coordinates,
+                                                )}
+                                                onChange={(e) => {
+                                                  const position =
+                                                    parsePositionInput(
+                                                      e.target.value,
+                                                    );
                                                   setSiteLocationDraft({
                                                     ...siteLocationDraft,
-                                                    address: e.target.value,
-                                                  })
-                                                }
-                                              />
-                                            </label>
-                                            <label>
-                                              <span>緯度・経度</span>
-                                              <input
-                                                placeholder="例：32.803100, 130.707900"
-                                                value={
-                                                  siteLocationDraft.coordinates
-                                                }
-                                                onChange={(e) =>
-                                                  setSiteLocationDraft({
-                                                    ...siteLocationDraft,
-                                                    coordinates: e.target.value,
-                                                  })
-                                                }
+                                                    ...position,
+                                                  });
+                                                }}
                                               />
                                             </label>
                                             <div className="site-location-buttons">
