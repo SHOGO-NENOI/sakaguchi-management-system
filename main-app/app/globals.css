@@ -5292,5 +5292,9 @@ html body :is(.transfer-label.exception, .transfer-kind.exception) {
   color: #211000 !important;
   background: #ffd07e !important;
 }
-html body .transfer-list-heading button { color: var(--text); }
+html body .transfer-list-heading button {
+  color: var(--text);
+  background: var(--input);
+  border-color: var(--line);
+}
 
