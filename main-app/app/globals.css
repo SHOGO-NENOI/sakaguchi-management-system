@@ -5281,4 +5281,16 @@ html body .reminder-section button:disabled {
 }
 
 html body .transfer-row > small { color: var(--green-dark); }
+html body .personnel-options small,
+html body .daily-extra-summary small { color: var(--muted) !important; }
+html body .daily-extra-summary strong { color: var(--text) !important; }
+html body :is(.transfer-label.normal, .transfer-kind.normal) {
+  color: var(--on-accent) !important;
+  background: var(--green) !important;
+}
+html body :is(.transfer-label.exception, .transfer-kind.exception) {
+  color: #211000 !important;
+  background: #ffd07e !important;
+}
+html body .transfer-list-heading button { color: var(--text); }
 
