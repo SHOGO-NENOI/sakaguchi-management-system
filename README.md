@@ -1,12 +1,11 @@
-# 坂口商会総合管理システム v2.2.10
+# 坂口商会総合管理システム v2.2.25
 
 別チャットで開発を再開するためのソースコード一式です。
 
 ## 収録内容
 
-- `main-app/`：昌吾さん用アプリ
-- `kiyota-app/`：清田さん用アプリ
-- 各アプリの画面、API、データベース定義、Drizzle移行ファイル、公開設定、画像、テスト、ビルド用スクリプト
+- `main-app/`：坂口商会総合管理システム本体
+- 画面、API、データベース定義、Drizzle移行ファイル、公開設定、画像、テスト、ビルド用スクリプト
 
 ## 除外したもの
 
@@ -30,10 +29,10 @@ Google OAuthのクライアントIDとクライアントシークレットはソ
 
 ## 開発の再開
 
-各アプリのフォルダで実行します。
+`main-app`フォルダで実行します。
 
 ```bash
-npm install
+npm ci
 npm run build
 ```
 
@@ -43,17 +42,27 @@ npm run build
 npm run dev
 ```
 
+### macOSでの初回セットアップ
+
+- Apple Siliconを含むmacOSに対応しています。
+- Node.js `22.13.0`以上とnpmを使用します。
+- 依存関係は必ず`main-app`で`npm ci`を実行し、`package-lock.json`どおりに導入してください。
+- `npm run build`は、公開環境のLinuxではGNU `timeout`で実行時間を制限し、macOSでは`gtimeout`があれば同様に制限します。どちらも無い場合でもローカルビルドは実行できます。
+- `.env*`、`.sites-runtime/`、`node_modules/`、`dist/`はGit管理外です。秘密情報をコミットしないでください。
+
+移行後の一括確認は、`main-app`で次を実行します。
+
+```bash
+npm ci
+npm test
+npm run lint
+npm run typecheck
+```
+
 ## アプリ固有の注意点
 
-- 清田さん用はGoogleログインで `da1206ri@gmail.com` のみ許可する構成です。変更する場合は `kiyota-app/app/authorized-user.ts` の `KIYOTA_EMAIL` を変更してください。
-- 両アプリは別々のD1・R2・Googleアカウントを使う前提です。
 - `.openai/hosting.json` には既存Sitesプロジェクトとの関連付けが含まれています。別プロジェクトとして複製する場合は、既存の `project_id` をそのまま流用せず、新しいSitesプロジェクトのIDに置き換えてください。
 
-## v2.2.10の未公開修正
+## 変更履歴
 
-- 非表示にした入力候補と同じ名前を追加した場合、新規作成ではなく既存候補を復元
-- 表示中の同名候補の重複登録を防止
-- 編集時の重複を日本語のエラーで表示
-
-このZIP作成時点では、公開サイトはv2.2.9、同梱ソースはv2.2.10です。
-
+最新の変更内容は`main-app/V2.2.25_CHANGES.md`を参照してください。

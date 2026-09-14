@@ -3598,21 +3598,18 @@ export default function Home() {
     direction: -1 | 1,
   ) {
     const current = toolSetsRef.current;
-    const source =
-      type === "set"
-        ? current.filter((set) => set.category === toolCategory)
-        : (current.find((set) => set.id === setId)?.items ?? []);
-    const index = source.findIndex((entry) => entry.id === id);
-    const targetIndex = index + direction;
-    if (index < 0 || targetIndex < 0 || targetIndex >= source.length)
-      return false;
-    const reordered = [...source];
-    [reordered[index], reordered[targetIndex]] = [
-      reordered[targetIndex],
-      reordered[index],
-    ];
     let next: ToolChecklistSet[];
     if (type === "set") {
+      const source = current.filter((set) => set.category === toolCategory);
+      const index = source.findIndex((set) => set.id === id);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= source.length)
+        return false;
+      const reordered = [...source];
+      [reordered[index], reordered[targetIndex]] = [
+        reordered[targetIndex],
+        reordered[index],
+      ];
       let categoryIndex = 0;
       next = current.map((set) =>
         set.category === toolCategory
@@ -3620,6 +3617,16 @@ export default function Home() {
           : set,
       );
     } else {
+      const source = current.find((set) => set.id === setId)?.items ?? [];
+      const index = source.findIndex((item) => item.id === id);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= source.length)
+        return false;
+      const reordered = [...source];
+      [reordered[index], reordered[targetIndex]] = [
+        reordered[targetIndex],
+        reordered[index],
+      ];
       next = current.map((set) =>
         set.id === setId
           ? {

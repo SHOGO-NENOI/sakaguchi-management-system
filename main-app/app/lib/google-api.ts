@@ -32,7 +32,7 @@ export async function googleFetch(url: string, init: RequestInit = {}) {
 }
 
 export async function ensureSpreadsheet() {
-  let settings = await getGoogleOAuthSettings();
+  const settings = await getGoogleOAuthSettings();
   if (!settings) throw new Error("Google連携設定がありません");
   if (settings.spreadsheetId) return { id: settings.spreadsheetId, url: settings.spreadsheetUrl };
   const response = await googleFetch("https://sheets.googleapis.com/v4/spreadsheets", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ properties: { title: "坂口商会勤怠記録データ" }, sheets: [{ properties: { title: "勤務記録" } }] }) });

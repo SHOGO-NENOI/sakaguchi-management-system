@@ -1,1 +1,0 @@
-ALTER TABLE `attendance_entries` ADD `location` text DEFAULT '' NOT NULL;

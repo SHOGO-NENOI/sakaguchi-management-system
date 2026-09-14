@@ -1,4 +1,4 @@
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { attendanceEntries, googleOAuthSettings } from "../../../../db/schema";
 import { googleFetch } from "../../../lib/google-api";
@@ -10,7 +10,6 @@ type GoogleEvent = {
   extendedProperties?: { private?: Record<string, string> };
 };
 
-function part(value: string, index: number, fallback = "") { return value.split("｜")[index]?.trim() || fallback; }
 function replacePart(value: string, index: number, next: string) { const values = value.split("｜"); while (values.length <= index) values.push(""); values[index] = next; return values.join("｜"); }
 function dateTimePart(value?: string) { if (!value) return { date: "", time: "" }; const matched = value.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/); return { date: matched?.[1] ?? "", time: matched?.[2] ?? "" }; }
 function details(description = "") { return Object.fromEntries(description.split("\n").map((line) => { const index = line.indexOf("："); return index > 0 ? [line.slice(0, index), line.slice(index + 1)] : ["", ""]; }).filter(([key]) => key)); }
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
           }).where(eq(attendanceEntries.id, row.id));
           calendarRemoved += 1; continue;
         }
-        let changes: Partial<typeof attendanceEntries.$inferInsert> = {};
+        const changes: Partial<typeof attendanceEntries.$inferInsert> = {};
         linked.forEach((event, index) => {
           if (!event.updated || (row.lastSyncedAt && event.updated <= row.lastSyncedAt)) return;
           const info = details(event.description);
