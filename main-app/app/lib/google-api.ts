@@ -5,16 +5,31 @@ import { decryptSecret, encryptSecret, getGoogleOAuthSettings } from "./google-o
 
 export async function googleAccessToken() {
   const settings = await getGoogleOAuthSettings();
-  if (!settings?.refreshTokenEncrypted && !settings?.accessTokenEncrypted) throw new Error("設定からGoogleアカウントを連携してください");
+  if (!settings?.refreshTokenEncrypted && !settings?.accessTokenEncrypted) {
+    throw new Error("Googleアカウント連携が切れています。設定画面からGoogleアカウントを再連携してください");
+  }
   if (settings.accessTokenEncrypted && settings.accessTokenExpiresAt > Date.now() + 60_000) return decryptSecret(settings.accessTokenEncrypted);
-  if (!settings.refreshTokenEncrypted) throw new Error("Googleアカウントをもう一度連携してください");
+  if (!settings.refreshTokenEncrypted) {
+    throw new Error("Googleアカウント連携の有効期限が切れています。設定画面からGoogleアカウントを再連携してください");
+  }
   const response = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ client_id: settings.clientId, client_secret: await decryptSecret(settings.clientSecretEncrypted), refresh_token: await decryptSecret(settings.refreshTokenEncrypted), grant_type: "refresh_token" }),
   });
-  const result = await response.json() as { access_token?: string; expires_in?: number; error_description?: string };
-  if (!response.ok || !result.access_token) throw new Error(result.error_description || "Googleアカウントを再連携してください");
+  const result = await response.json() as { access_token?: string; expires_in?: number; error?: string; error_description?: string };
+  if (!response.ok || !result.access_token) {
+    if (result.error === "invalid_grant") {
+      const db = await getDb();
+      await db.update(googleOAuthSettings).set({
+        accessTokenEncrypted: "",
+        refreshTokenEncrypted: "",
+        accessTokenExpiresAt: 0,
+      }).where(eq(googleOAuthSettings.id, 1));
+      throw new Error("Googleアカウント連携の有効期限が切れています。設定画面からGoogleアカウントを再連携してください");
+    }
+    throw new Error(result.error_description || "Googleアカウントを再連携してください");
+  }
   const db = await getDb();
   await db.update(googleOAuthSettings).set({ accessTokenEncrypted: await encryptSecret(result.access_token), accessTokenExpiresAt: Date.now() + (result.expires_in ?? 3600) * 1000 }).where(eq(googleOAuthSettings.id, 1));
   return result.access_token;

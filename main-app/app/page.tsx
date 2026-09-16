@@ -1179,6 +1179,8 @@ export default function Home() {
             setGoogleConnectionMessage(
               params.get("message") || "Google連携に失敗しました",
             );
+          if (!params.has("google") && data.warning)
+            setGoogleConnectionMessage(data.warning);
         })
         .catch(() => undefined);
     }, 750);
@@ -4065,6 +4067,7 @@ export default function Home() {
                   </small>
                 </div>
                 <div className="google-connected-actions">
+                  <a href="/api/google/start">Googleアカウントを再連携</a>
                   <button
                     className="primary"
                     type="button"

@@ -40,7 +40,9 @@ export async function syncSheet(row: EntryRow, action: "upsert" | "delete") {
 
 export async function syncGoogleCalendar(row: EntryRow, action: "upsert" | "delete", options: { calendarEndDate?: string; suppressCalendar?: boolean } = {}) {
   const settings = await getGoogleOAuthSettings();
-  if (!settings?.accessTokenEncrypted && !settings?.refreshTokenEncrypted) return { eventId: row.googleEventId, synced: false };
+  if (!settings?.accessTokenEncrypted && !settings?.refreshTokenEncrypted) {
+    throw new Error("Googleアカウント連携が切れています。設定画面からGoogleアカウントを再連携してください");
+  }
   const workType = normalizedWorkType(row.workType);
   const isOff = workType === "休み";
   const effectiveAction = action === "upsert" && (options.suppressCalendar || (isOff && isSunday(row.workDate))) ? "delete" : action;

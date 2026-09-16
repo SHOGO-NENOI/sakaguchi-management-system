@@ -1,6 +1,7 @@
 import { getDb } from "../../../../db";
 import { googleOAuthSettings } from "../../../../db/schema";
 import { encryptSecret, getGoogleOAuthSettings } from "../../../lib/google-oauth";
+import { googleAccessToken } from "../../../lib/google-api";
 
 function publicSettings(row: Awaited<ReturnType<typeof getGoogleOAuthSettings>>) {
   return {
@@ -14,7 +15,19 @@ function publicSettings(row: Awaited<ReturnType<typeof getGoogleOAuthSettings>>)
 }
 
 export async function GET() {
-  return Response.json({ settings: publicSettings(await getGoogleOAuthSettings()) });
+  const settings = await getGoogleOAuthSettings();
+  if (!settings?.refreshTokenEncrypted && !settings?.accessTokenEncrypted) {
+    return Response.json({ settings: publicSettings(settings) });
+  }
+  try {
+    await googleAccessToken();
+    return Response.json({ settings: publicSettings(settings) });
+  } catch (error) {
+    return Response.json({
+      settings: publicSettings(await getGoogleOAuthSettings()),
+      warning: error instanceof Error ? error.message : "Googleアカウントとの接続を確認できませんでした",
+    });
+  }
 }
 
 export async function PUT(request: Request) {
