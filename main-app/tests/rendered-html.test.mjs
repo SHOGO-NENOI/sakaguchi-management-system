@@ -30,4 +30,5 @@ test("renders the Sakaguchi attendance metadata", async () => {
   assert.match(html, /<title>坂口商会総合管理システム<\/title>/i);
   assert.match(html, /<meta property="og:title" content="坂口商会総合管理システム"\/>/i);
   assert.match(html, /<meta property="og:image" content="https:\/\/kantan-kintai\.liabrise-main-xxecla\.chatgpt\.site\/og\.png"\/>/i);
+  assert.match(html, /<link rel="apple-touch-icon" href="\/sakaguchi-icon\.png"\/>/i);
 });
