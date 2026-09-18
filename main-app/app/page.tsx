@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { coordinateKey } from "@/app/lib/coordinates";
-import { groupRecordsByDate } from "@/app/lib/group-records";
+import { groupRecordsByDate, splitUpcomingRecords } from "@/app/lib/group-records";
 
 type WorkType = "1日" | "半日" | "休み";
 type Entry = {
@@ -895,6 +895,7 @@ export default function Home() {
   const [month, setMonth] = useState(today().slice(0, 7));
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("monthly");
   const [historyView, setHistoryView] = useState<"list" | "calendar">("list");
+  const [planPersonFilter, setPlanPersonFilter] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1418,40 +1419,25 @@ export default function Home() {
     () => monthEntries.filter((entry) => entry.date > currentDate),
     [monthEntries, currentDate],
   );
-  const todayEntries = entries
-    .filter((entry) => entry.date === currentDate)
-    .sort((a, b) => a.start.localeCompare(b.start));
   const tomorrowDate = nextDate(currentDate);
-  const tomorrowEntries = entries
-    .filter((entry) => entry.date === tomorrowDate)
-    .sort((a, b) => a.start.localeCompare(b.start));
-  const featuredPlanGroups = [
-    {
-      id: "today-plans-title",
-      title: "本日の予定",
-      date: currentDate,
-      entries: todayEntries,
-      loading: "本日の予定を読み込んでいます…",
-      emptyTitle: "本日の予定はありません",
-      emptyHelp: "入力タブから本日の勤務内容を登録できます。",
-    },
-    {
-      id: "tomorrow-plans-title",
-      title: "明日の予定",
-      date: tomorrowDate,
-      entries: tomorrowEntries,
-      loading: "明日の予定を読み込んでいます…",
-      emptyTitle: "明日の予定はありません",
-      emptyHelp: "入力タブから明日の勤務内容を登録できます。",
-    },
-  ];
+  const planPeople = Array.from(new Set(entries.flatMap((entry) =>
+    entrySiteRows(entry).flatMap((row) => row.personnelNames.split(/[、,，]/).map((name) => name.trim()).filter(Boolean)),
+  ))).sort((a, b) => a.localeCompare(b, "ja"));
+  const matchesPlanPerson = (entry: Entry) => !planPersonFilter ||
+    entrySiteRows(entry).some((row) => row.personnelNames.split(/[、,，]/).some((name) => name.trim() === planPersonFilter));
   const visibleRecordEntries =
     activeTab === "plans"
-      ? plannedMonthEntries
-          .filter((entry) => entry.date > tomorrowDate)
-          .sort((a, b) => a.date.localeCompare(b.date))
+      ? monthEntries.filter((entry) => entry.date >= currentDate && matchesPlanPerson(entry)).sort((a, b) => a.date.localeCompare(b.date))
       : completedMonthEntries;
-  const visibleRecordGroups = groupRecordsByDate(visibleRecordEntries);
+  const planBoardEntries = entries
+    .filter((entry) => entry.date >= currentDate && matchesPlanPerson(entry))
+    .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
+  const planBuckets = splitUpcomingRecords(planBoardEntries, currentDate, tomorrowDate);
+  const planSections = [
+    { id: "today", title: "今日の予定", date: currentDate, entries: planBuckets.today },
+    { id: "tomorrow", title: "明日の予定", date: tomorrowDate, entries: planBuckets.tomorrow },
+    { id: "later", title: "明日以降の予定", date: "", entries: planBuckets.later },
+  ];
   const shiftBoardEntries = useMemo(
     () => [...monthEntries].sort((a, b) => a.date.localeCompare(b.date)),
     [monthEntries],
@@ -6417,96 +6403,41 @@ export default function Home() {
           </details>
         )}
 
-        {activeTab === "plans" && featuredPlanGroups.map((group) => (
-          <section className="history-section today-plans" aria-labelledby={group.id} key={group.id}>
-            <div className="section-heading">
-              <div className="heading-title-line">
-                <h2 id={group.id}>{group.title}</h2>
-                <time dateTime={group.date}>{fullDateLabel(group.date)}</time>
-              </div>
-              <span className="count">{group.entries.length}件</span>
-            </div>
-            {!ready ? <p role="status">{group.loading}</p> : group.entries.length === 0 ? (
-              <div className="empty"><h3>{group.emptyTitle}</h3><p>{group.emptyHelp}</p></div>
-            ) : (
-              <div className="today-plan-list">
-                {group.entries.map((entry) => (
-                  <article className="today-plan-card" key={entry.id}>
-                    <header className="today-plan-header">
-                      <div><span className={`type-badge type-${entry.type}`}>{entry.type}</span>{entry.type !== "休み" && <strong>{formatEntryTimes(entry)}</strong>}</div>
-                      <button type="button" onClick={() => edit(entry)}>編集</button>
-                    </header>
-                    {entry.type === "休み" ? <p>{entry.note || "本日は休みです"}</p> : (
-                      <>
-                        {entrySiteRows(entry).length === 0 && <p>現場は未登録です</p>}
-                        {entrySiteRows(entry).map((row, index) => {
-                          const cardKey = siteCardKey(row);
-                          const master = siteMasters.find((site) => siteCardKey(site) === cardKey);
-                          const address = row.address || master?.address || "";
-                          const coordinates = row.coordinates || master?.coordinates || "";
-                          const documents = siteDocumentsByKey[cardKey];
-                          const count = documents?.length ?? siteDocumentCounts?.[cardKey];
-                          const hasSite = Boolean(row.site || row.location || row.address || row.coordinates);
-                          return (
-                            <section className="today-plan-site" key={`${entry.id}-${index}`}>
-                              <p className="today-plan-location">{row.location || "場所未入力"}</p>
-                              <h3>{row.site || "現場名未入力"}</h3>
-                              <dl>
-                                <div><dt>作業内容</dt><dd>{row.work || "未入力"}</dd></div>
-                                {row.personnelNames && <div><dt>作業者</dt><dd>{row.personnelNames}</dd></div>}
-                                <div><dt>位置情報</dt><dd>{address || coordinates ? <>{address && <span>{address}</span>}{coordinates && <span>{coordinates}</span>}</> : "未登録"}</dd></div>
-                              </dl>
-                              {(address.trim() || coordinates.trim()) && (
-                                <div className="today-plan-map-actions">
-                                  <a className="today-plan-map today-plan-navigation" href={navigationUrl(address, coordinates)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || "現場"}まで車でナビを開く`}>🚗 現場までナビ</a>
-                                  <a className="today-plan-map" href={mapsUrl(address, coordinates, row.location, row.site)} target="_blank" rel="noreferrer">🗺️ Googleマップで開く</a>
-                                </div>
-                              )}
-                              {row.note && <p className="today-plan-note">{row.note}</p>}
-                              {hasSite && (
-                                <details className="today-plan-documents" onToggle={(event) => { if (event.currentTarget.open) void loadSiteDocuments(cardKey); }}>
-                                  <summary>📎 現場資料{count !== undefined ? `（${count}件）` : "を確認"}</summary>
-                                  {siteDocumentLoadingKey === cardKey && !documents && <p role="status">資料を読み込んでいます…</p>}
-                                  {documents?.length === 0 && <p>登録された資料はありません</p>}
-                                  {documents?.map((document) => <a key={document.id} href={`/api/site-documents/file?id=${document.id}`} target="_blank" rel="noreferrer">{document.contentType === "application/pdf" ? "PDF" : "画像"}：{document.fileName} ↗</a>)}
-                                  {siteDocumentMessages[cardKey] && <p role="status">{siteDocumentMessages[cardKey]}</p>}
-                                  {siteDocumentMessages[cardKey] && <button type="button" onClick={() => void loadSiteDocuments(cardKey, true)}>資料を再読み込み</button>}
-                                </details>
-                              )}
-                            </section>
-                          );
-                        })}
-                        {entry.businessTrip && <p>出張・夜ご飯：{entry.dinnerType || "未選択"}{entry.hotelName && ` ／ 宿泊：${entry.hotelName}`}</p>}
-                      </>
-                    )}
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
-        ))}
         {(activeTab === "history" || activeTab === "plans") && (
           <section className="history-section">
             <div className="section-heading history-heading">
               <div>
                 <span className="eyebrow">
                   {activeTab === "plans"
-                    ? "これからの予定"
+                    ? "共有スケジュール"
                     : "過去の記録"}
                 </span>
                 <div className="heading-title-line">
-                  <h2>{activeTab === "plans" ? "それ以降の予定" : "勤務履歴"}</h2>
-                  <time dateTime={today()}>{fullDateLabel(today())}</time>
+                  <h2>{activeTab === "plans" ? "予定" : "勤務履歴"}</h2>
+                  {activeTab === "history" && <time dateTime={today()}>{fullDateLabel(today())}</time>}
                 </div>
               </div>
+              {activeTab === "plans" && (
+                <button type="button" className="plan-add-button" onClick={() => setActiveTab("entry")}>＋ 予定を入力</button>
+              )}
+            </div>
+            {activeTab === "plans" && (
+              <div className="plan-person-filters" aria-label="作業者で絞り込み">
+                <button type="button" className={!planPersonFilter ? "active" : ""} aria-pressed={!planPersonFilter} onClick={() => setPlanPersonFilter("")}>全員</button>
+                {planPeople.map((person) => (
+                  <button type="button" key={person} className={planPersonFilter === person ? "active" : ""} aria-pressed={planPersonFilter === person} onClick={() => setPlanPersonFilter(person)}>{person}</button>
+                ))}
+              </div>
+            )}
+            <div className="plan-view-row">
               <div className="history-tools">
-                <input
+                {(activeTab === "history" || historyView === "calendar") && <input
                   aria-label="表示する月"
                   className="month-input"
                   type="month"
                   value={month}
                   onChange={(e) => setMonth(e.target.value)}
-                />
+                />}
                 <div className="view-switch" aria-label="表示方法">
                   <button
                     type="button"
@@ -6525,30 +6456,32 @@ export default function Home() {
                     カレンダー
                   </button>
                 </div>
-                <span className="count">{visibleRecordEntries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</span>
+                {activeTab === "history" && <span className="count">{visibleRecordEntries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</span>}
               </div>
             </div>
             {activeTab === "plans" &&
               historyView === "list" &&
-              visibleRecordEntries.length > 0 && (
+              planBoardEntries.length > 0 && (
+                <details className="plan-bulk-details">
+                  <summary>予定をまとめて操作</summary>
                 <div className="plan-bulk-toolbar">
                   <label>
                     <input
                       type="checkbox"
                       checked={
-                        selectedPlanIds.length === visibleRecordEntries.length
+                        selectedPlanIds.length === planBoardEntries.length
                       }
                       ref={(input) => {
                         if (input)
                           input.indeterminate =
                             selectedPlanIds.length > 0 &&
                             selectedPlanIds.length <
-                              visibleRecordEntries.length;
+                              planBoardEntries.length;
                       }}
                       onChange={(event) =>
                         setSelectedPlanIds(
                           event.target.checked
-                            ? visibleRecordEntries.map((entry) => entry.id)
+                            ? planBoardEntries.map((entry) => entry.id)
                             : [],
                         )
                       }
@@ -6564,12 +6497,13 @@ export default function Home() {
                     選択した予定を削除
                   </button>
                 </div>
+                </details>
               )}
             {!ready ? (
               <div className="empty">
                 <h3>記録を読み込んでいます…</h3>
               </div>
-            ) : visibleRecordEntries.length === 0 ? (
+            ) : visibleRecordEntries.length === 0 && activeTab === "history" && historyView === "list" ? (
               <div className="empty">
                 <span>{activeTab === "plans" ? "予" : "記"}</span>
                 <h3>
@@ -6663,8 +6597,21 @@ export default function Home() {
                 </p>
               </div>
             ) : (
+              <div className={activeTab === "plans" ? "plan-board" : ""}>
+                {(activeTab === "plans" ? planSections : [{ id: "history", title: "", date: "", entries: visibleRecordEntries }]).map((section) => (
+                  <section className={activeTab === "plans" ? `plan-panel plan-panel-${section.id}` : "history-results"} key={section.id}>
+                    {activeTab === "plans" && (
+                      <div className="plan-panel-heading">
+                        <div>
+                          <h3>{section.title}</h3>
+                          {section.date && <time dateTime={section.date}>{fullDateLabel(section.date)}</time>}
+                        </div>
+                        <span>{section.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</span>
+                      </div>
+                    )}
+                    {section.entries.length ? (
               <div className="history-list">
-                {visibleRecordGroups.map((group) => (
+                {groupRecordsByDate(section.entries).map((group) => (
                   <section className="history-day" key={group.date} aria-label={`${formatDate(group.date)}の${activeTab === "plans" ? "予定" : "勤務記録"} ${group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件`}>
                     <div className="date-block">
                       <strong>
@@ -6679,7 +6626,7 @@ export default function Home() {
                     <div className="history-day-entries">
                 {group.entries.map((entry) => {
                   const extra = extraMinutes(entry);
-                  const planned = entry.date > today();
+                  const planned = activeTab === "plans" || entry.date > today();
                   const siteRows = entry.type === "休み" ? [] : entrySiteRows(entry);
                   const startTimes = entry.start.split(SITE_SEPARATOR);
                   const endTimes = entry.end.split(SITE_SEPARATOR);
@@ -6721,17 +6668,35 @@ export default function Home() {
                         </div>
                         {siteRows.length ? (
                           <div className="record-site-list">
-                            {siteRows.map((row, index) => (
-                              <div className="record-site" key={`${entry.id}-site-${index}`}>
+                            {siteRows.map((row, index) => {
+                              const siteKey = siteCardKey(row);
+                              const documents = siteDocumentsByKey[siteKey];
+                              return <div className="record-site" key={`${entry.id}-site-${index}`}>
                                 <p>{row.site || row.location || row.work || "現場名の記録なし"}</p>
                                 <small className="record-detail">
                                   {[row.location && row.site ? row.location : "", [startTimes[index] || startTimes[0], endTimes[index] || endTimes[0]].filter(Boolean).join("〜"), row.personnelNames, row.work].filter(Boolean).join("・")}
                                 </small>
-                                {(row.address || row.coordinates || row.site || row.location) && (
-                                  <a className="record-map-link" href={mapsUrl(row.address, row.coordinates, row.location, row.site)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || `${index + 1}件目の現場`}の地図を開く`}>🗺️ 地図を開く</a>
-                                )}
-                              </div>
-                            ))}
+                                <div className="record-site-actions">
+                                  {(row.address || row.coordinates) && (
+                                    <a className="record-nav-link" href={navigationUrl(row.address, row.coordinates)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || "現場"}まで車でナビを開く`}>🚗 ナビ開始</a>
+                                  )}
+                                  {(row.address || row.coordinates || row.site || row.location) && (
+                                    <a className="record-map-link" href={mapsUrl(row.address, row.coordinates, row.location, row.site)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || `${index + 1}件目の現場`}の地図を開く`}>🗺️ 地図</a>
+                                  )}
+                                  {(row.site || row.location) && (
+                                    <details className="record-materials" onToggle={(event) => { if (event.currentTarget.open) void loadSiteDocuments(siteKey); }}>
+                                      <summary>📎 資料</summary>
+                                      <div className="record-materials-content">
+                                        {siteDocumentLoadingKey === siteKey && !documents && <span role="status">読み込み中…</span>}
+                                        {documents?.length === 0 && <span>資料はありません</span>}
+                                        {documents?.map((document) => <a key={document.id} href={`/api/site-documents/file?id=${document.id}`} target="_blank" rel="noreferrer">{document.fileName} ↗</a>)}
+                                        {siteDocumentMessages[siteKey] && <span role="status">{siteDocumentMessages[siteKey]}</span>}
+                                      </div>
+                                    </details>
+                                  )}
+                                </div>
+                              </div>;
+                            })}
                           </div>
                         ) : (
                           <p>{entry.type === "休み" ? entry.note || "休み" : displayWorkSummary(entry.location, entry.site, entry.work) || "現場名・作業内容の記録なし"}</p>
@@ -6774,6 +6739,12 @@ export default function Home() {
                   );
                 })}
                     </div>
+                  </section>
+                ))}
+              </div>
+                    ) : activeTab === "plans" && (
+                      <div className="plan-panel-empty">予定はありません</div>
+                    )}
                   </section>
                 ))}
               </div>

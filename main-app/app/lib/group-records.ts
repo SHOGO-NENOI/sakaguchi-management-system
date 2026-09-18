@@ -7,3 +7,15 @@ export function groupRecordsByDate<T extends { date: string }>(entries: T[]) {
   }
   return groups;
 }
+
+export function splitUpcomingRecords<T extends { date: string }>(
+  entries: T[],
+  today: string,
+  tomorrow: string,
+) {
+  return {
+    today: entries.filter((entry) => entry.date === today),
+    tomorrow: entries.filter((entry) => entry.date === tomorrow),
+    later: entries.filter((entry) => entry.date > tomorrow),
+  };
+}
