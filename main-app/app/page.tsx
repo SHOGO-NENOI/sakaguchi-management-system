@@ -6727,7 +6727,7 @@ export default function Home() {
                                 <small className="record-detail">
                                   {[row.location && row.site ? row.location : "", [startTimes[index] || startTimes[0], endTimes[index] || endTimes[0]].filter(Boolean).join("〜"), row.personnelNames, row.work].filter(Boolean).join("・")}
                                 </small>
-                                {planned && (row.address || row.coordinates) && (
+                                {(row.address || row.coordinates || row.site || row.location) && (
                                   <a className="record-map-link" href={mapsUrl(row.address, row.coordinates, row.location, row.site)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || `${index + 1}件目の現場`}の地図を開く`}>🗺️ 地図を開く</a>
                                 )}
                               </div>
