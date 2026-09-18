@@ -118,8 +118,8 @@ type ToolDragState = {
   active: boolean;
   timer: number;
 };
-type Skin = "green" | "black" | "blue" | "purple" | "brown";
-type FontSize = "small" | "standard" | "large";
+type Skin = "green" | "black" | "blue" | "purple" | "brown" | "white";
+type FontSize = "small" | "standard" | "large" | "extra-large" | "maximum";
 type AppTab =
   | "entry"
   | "history"
@@ -935,7 +935,7 @@ export default function Home() {
   useEffect(() => {
     setSelectedPlanIds([]);
   }, [currentDate, month, activeTab]);
-  const [skin, setSkin] = useState<Skin>("green");
+  const [skin, setSkin] = useState<Skin>("white");
   const [skinReady, setSkinReady] = useState(false);
   const [fontSize, setFontSize] = useState<FontSize>("standard");
   const [fontSizeReady, setFontSizeReady] = useState(false);
@@ -1289,19 +1289,19 @@ export default function Home() {
         )
           setActiveTab(savedTab);
         const savedSkin = localStorage.getItem("sakaguchi-attendance-skin");
-        if (savedSkin === "dark") {
-          setSkin("green");
-          localStorage.setItem("sakaguchi-attendance-skin", "green");
-        }
-        if (
-          savedSkin &&
-          ["green", "black", "blue", "purple", "brown"].includes(savedSkin)
-        )
-          setSkin(savedSkin as Skin);
+        const paletteMigrated = localStorage.getItem("sakaguchi-attendance-skin-palette-v2") === "1";
+        const nextSkin = !paletteMigrated && savedSkin === "green"
+          ? "white"
+          : !paletteMigrated && savedSkin === "dark"
+            ? "black"
+            : savedSkin;
+        if (nextSkin && ["green", "black", "blue", "purple", "brown", "white"].includes(nextSkin))
+          setSkin(nextSkin as Skin);
+        localStorage.setItem("sakaguchi-attendance-skin-palette-v2", "1");
         const savedFontSize = localStorage.getItem(
           "sakaguchi-attendance-font-size",
         ) as FontSize | null;
-        if (savedFontSize && ["small", "standard", "large"].includes(savedFontSize))
+        if (savedFontSize && ["small", "standard", "large", "extra-large", "maximum"].includes(savedFontSize))
           setFontSize(savedFontSize);
         const savedTransfer = localStorage.getItem("sakaguchi-shiftboard-done");
         if (savedTransfer) setShiftBoardDone(JSON.parse(savedTransfer));
@@ -6302,6 +6302,7 @@ export default function Home() {
                   ["blue", "ブルー"],
                   ["purple", "パープル"],
                   ["brown", "ブラウン"],
+                  ["white", "ホワイト"],
                 ] as [Skin, string][]
               ).map(([value, label]) => (
                 <button
@@ -6327,6 +6328,8 @@ export default function Home() {
                   ["small", "小さめ"],
                   ["standard", "標準"],
                   ["large", "大きめ"],
+                  ["extra-large", "特大"],
+                  ["maximum", "最大"],
                 ] as [FontSize, string][]).map(([value, label]) => (
                   <button
                     key={value}

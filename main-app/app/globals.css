@@ -40,6 +40,41 @@
   --page-end: #fff;
   color-scheme: light;
 }
+html[data-theme="green"] {
+  --ink: #f4f8f6;
+  --muted: #9aaba3;
+  --line: #587068;
+  --paper: #0d1915;
+  --card: #0d1915;
+  --input: #13211c;
+  --text: #f4f8f6;
+  --soft: #13211c;
+  --base: #07110e;
+  --green: #16d68f;
+  --green-dark: #0fae76;
+  --topbar: rgba(13, 25, 21, 0.94);
+  --page-start: #07110e;
+  --page-end: #07110e;
+  color-scheme: dark;
+}
+html[data-theme="white"] {
+  --on-accent: #fff;
+  --ink: #172323;
+  --muted: #4b5563;
+  --line: #8a949e;
+  --paper: #fff;
+  --card: #fff;
+  --input: #fff;
+  --text: #172323;
+  --soft: #f3f4f6;
+  --base: #fff;
+  --green: #087a55;
+  --green-dark: #056b49;
+  --topbar: rgba(255, 255, 255, 0.96);
+  --page-start: #fff;
+  --page-end: #fff;
+  color-scheme: light;
+}
 html[data-theme="blue"] {
   --ink: #f3f7ff;
   --muted: #9cadc3;
@@ -332,6 +367,10 @@ button {
 }
 .skin-options button.black > span {
   background: #000;
+}
+.skin-options button.white > span {
+  background: #fff;
+  box-shadow: 0 0 0 1px #8a949e;
 }
 .skin-options button b {
   margin-left: auto;
@@ -4853,7 +4892,7 @@ button, a { transition: transform 0.15s, border-color 0.15s, background-color 0.
 }
 
 /* 明るい現場共有画面と、日付ごとにまとまる勤務履歴。 */
-html[data-theme="green"] body,
+html[data-theme="white"] body,
 html:not([data-theme]) body {
   background: #fff;
 }
@@ -5786,3 +5825,32 @@ html body .history-list .record-site .record-map-link { background: #2771cb; bor
   overflow-wrap: anywhere;
 }
 .record-materials-content a { color: var(--green); }
+
+/* 現場共有アプリと同じ5段階。端末幅によらず選択した倍率を適用する。 */
+html[data-font-size="small"] { font-size: 13px; }
+html[data-font-size="standard"] { font-size: 15px; }
+html[data-font-size="large"] { font-size: 17px; }
+html[data-font-size="extra-large"] { font-size: 19px; }
+html[data-font-size="maximum"] { font-size: 21px; }
+html[data-font-size] body { font-size: 1em; }
+.skin-options { flex-wrap: wrap; }
+.skin-options button { min-width: 0; }
+.font-size-options { flex-wrap: wrap; }
+.font-size-options button { min-width: 4.5em; }
+.settings-skin-card {
+  display: grid;
+  grid-template-columns: minmax(120px, 160px) minmax(0, 1fr);
+  align-items: start;
+}
+.settings-skin-card > .skin-options { min-width: 0; }
+.settings-skin-card > .font-size-settings {
+  grid-column: 1 / -1;
+  grid-template-columns: minmax(120px, 160px) minmax(0, 1fr);
+}
+@media (max-width: 640px) {
+  .settings-skin-card { grid-template-columns: minmax(0, 1fr); }
+  .settings-skin-card > .font-size-settings { grid-template-columns: minmax(0, 1fr); }
+  .skin-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .font-size-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .font-size-options button { min-width: 0; }
+}
