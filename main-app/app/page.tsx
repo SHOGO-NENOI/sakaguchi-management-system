@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { coordinateKey } from "@/app/lib/coordinates";
+import { groupRecordsByDate } from "@/app/lib/group-records";
 
 type WorkType = "1日" | "半日" | "休み";
 type Entry = {
@@ -894,6 +895,7 @@ export default function Home() {
   const [month, setMonth] = useState(today().slice(0, 7));
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("monthly");
   const [historyView, setHistoryView] = useState<"list" | "calendar">("list");
+  const [moreOpen, setMoreOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -1449,6 +1451,7 @@ export default function Home() {
           .filter((entry) => entry.date > tomorrowDate)
           .sort((a, b) => a.date.localeCompare(b.date))
       : completedMonthEntries;
+  const visibleRecordGroups = groupRecordsByDate(visibleRecordEntries);
   const shiftBoardEntries = useMemo(
     () => [...monthEntries].sort((a, b) => a.date.localeCompare(b.date)),
     [monthEntries],
@@ -4035,6 +4038,25 @@ export default function Home() {
               {label}
             </button>
           ))}
+          <div className="app-more">
+            <button type="button" className={["summary", "tools", "shiftboard", "settings"].includes(activeTab) ? "active" : ""} aria-expanded={moreOpen} aria-controls="app-more-options" onClick={() => setMoreOpen((open) => !open)}>
+              <span aria-hidden="true">☰</span>その他
+            </button>
+            {moreOpen && (
+              <div className="app-more-options" id="app-more-options">
+                {([
+                  ["summary", "▥", "集計"],
+                  ["tools", "✓", "道具チェック"],
+                  ["shiftboard", "▤", "シフトボード"],
+                  ["settings", "⚙", "設定"],
+                ] as [AppTab, string, string][]).map(([tab, icon, label]) => (
+                  <button type="button" key={tab} onClick={() => { setActiveTab(tab); setMoreOpen(false); }}>
+                    <span aria-hidden="true">{icon}</span>{label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
         {activeTab === "settings" && (
           <section className="google-oauth-card">
@@ -6469,11 +6491,11 @@ export default function Home() {
               <div>
                 <span className="eyebrow">
                   {activeTab === "plans"
-                    ? "UPCOMING PLANS"
-                    : "ATTENDANCE RECORDS"}
+                    ? "これからの予定"
+                    : "過去の記録"}
                 </span>
                 <div className="heading-title-line">
-                  <h2>{activeTab === "plans" ? "それ以降の予定" : "勤務記録"}</h2>
+                  <h2>{activeTab === "plans" ? "それ以降の予定" : "勤務履歴"}</h2>
                   <time dateTime={today()}>{fullDateLabel(today())}</time>
                 </div>
               </div>
@@ -6503,7 +6525,7 @@ export default function Home() {
                     カレンダー
                   </button>
                 </div>
-                <span className="count">{visibleRecordEntries.length}件</span>
+                <span className="count">{visibleRecordEntries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</span>
               </div>
             </div>
             {activeTab === "plans" &&
@@ -6642,14 +6664,25 @@ export default function Home() {
               </div>
             ) : (
               <div className="history-list">
-                {visibleRecordEntries.map((entry) => {
+                {visibleRecordGroups.map((group) => (
+                  <section className="history-day" key={group.date} aria-label={`${formatDate(group.date)}の${activeTab === "plans" ? "予定" : "勤務記録"} ${group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件`}>
+                    <div className="date-block">
+                      <strong>
+                        {formatDate(group.date).split("(")[0]}
+                        {calendarHolidays.has(group.date) && (
+                          <em className="holiday-flag" title={calendarHolidays.get(group.date)} aria-label={calendarHolidays.get(group.date)}>🇯🇵</em>
+                        )}
+                      </strong>
+                      <span>{formatDate(group.date).match(/\((.+)\)/)?.[1]}</span>
+                      {group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0) > 1 && <small>{group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</small>}
+                    </div>
+                    <div className="history-day-entries">
+                {group.entries.map((entry) => {
                   const extra = extraMinutes(entry);
                   const planned = entry.date > today();
-                  const mapTargets = planned
-                    ? entrySiteRows(entry).filter(
-                        (row) => row.address || row.coordinates,
-                      )
-                    : [];
+                  const siteRows = entry.type === "休み" ? [] : entrySiteRows(entry);
+                  const startTimes = entry.start.split(SITE_SEPARATOR);
+                  const endTimes = entry.end.split(SITE_SEPARATOR);
                   const workColor =
                     entry.type === "休み"
                       ? "work-off"
@@ -6677,23 +6710,6 @@ export default function Home() {
                           />
                         </label>
                       )}
-                      <div className="date-block">
-                        <strong>
-                          {formatDate(entry.date).split("(")[0]}
-                          {calendarHolidays.has(entry.date) && (
-                            <em
-                              className="holiday-flag"
-                              title={calendarHolidays.get(entry.date)}
-                              aria-label={calendarHolidays.get(entry.date)}
-                            >
-                              🇯🇵
-                            </em>
-                          )}
-                        </strong>
-                        <span>
-                          {formatDate(entry.date).match(/\((.+)\)/)?.[1]}
-                        </span>
-                      </div>
                       <div className="record-main">
                         <div className="record-top">
                           {planned && (
@@ -6702,46 +6718,26 @@ export default function Home() {
                           <span className={`type-badge type-${entry.type}`}>
                             {entry.type}
                           </span>
-                          {["1日", "半日"].includes(entry.type) && (
-                            <strong>{formatEntryTimes(entry)}</strong>
-                          )}
                         </div>
-                        <p>
-                          {entry.type === "休み" ? (
-                            entry.note || "休み"
-                          ) : displayWorkSummary(entry.location, entry.site, entry.work) ? (
-                            <span className="record-route">
-                              {displayWorkSegments(entry.location, entry.site, entry.work).map((segment, index) => (
-                                <span className="record-route-step" key={`${entry.id}-${index}`}>{segment}</span>
-                              ))}
-                            </span>
-                          ) : (
-                            "現場名・作業内容の記録なし"
-                          )}
-                        </p>
+                        {siteRows.length ? (
+                          <div className="record-site-list">
+                            {siteRows.map((row, index) => (
+                              <div className="record-site" key={`${entry.id}-site-${index}`}>
+                                <p>{row.site || row.location || row.work || "現場名の記録なし"}</p>
+                                <small className="record-detail">
+                                  {[row.location && row.site ? row.location : "", [startTimes[index] || startTimes[0], endTimes[index] || endTimes[0]].filter(Boolean).join("〜"), row.personnelNames, row.work].filter(Boolean).join("・")}
+                                </small>
+                                {planned && (row.address || row.coordinates) && (
+                                  <a className="record-map-link" href={mapsUrl(row.address, row.coordinates, row.location, row.site)} target="_blank" rel="noreferrer" aria-label={`${row.site || row.location || `${index + 1}件目の現場`}の地図を開く`}>🗺️ 地図を開く</a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p>{entry.type === "休み" ? entry.note || "休み" : displayWorkSummary(entry.location, entry.site, entry.work) || "現場名・作業内容の記録なし"}</p>
+                        )}
                       </div>
                       <div className="record-extra">
-                        {mapTargets.map((row, index) => (
-                          <a
-                            className="record-map-link"
-                            href={mapsUrl(
-                              row.address,
-                              row.coordinates,
-                              row.location,
-                              row.site,
-                            )}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`${row.site || row.location || `${index + 1}件目の現場`}の地図を開く`}
-                            key={`${entry.id}-map-${index}`}
-                            title={mapTargets.length > 1 ? `現場${index + 1}をGoogleマップで開く` : "Googleマップで開く"}
-                          >
-                            🗺️
-                            {mapTargets.length > 1 && (
-                              <small aria-hidden="true">{index + 1}</small>
-                            )}
-                          </a>
-                        ))}
                         {entry.businessTrip && (
                           <span className="trip-badge">
                             出張・夜：{entry.dinnerType || "未選択"}
@@ -6777,6 +6773,9 @@ export default function Home() {
                     </article>
                   );
                 })}
+                    </div>
+                  </section>
+                ))}
               </div>
             )}
           </section>
