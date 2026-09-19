@@ -10,6 +10,10 @@ import {
 } from "react";
 import { coordinateKey } from "@/app/lib/coordinates";
 import { groupRecordsByDate, splitUpcomingRecords } from "@/app/lib/group-records";
+import {
+  isBeforeCurrentDate,
+  isCurrentUsersPlan,
+} from "@/app/lib/schedule-visibility";
 
 type WorkType = "1日" | "半日" | "休み";
 type Entry = {
@@ -150,8 +154,9 @@ type SyncDashboard = {
   lastSyncAt: string;
 };
 
-const APP_VERSION = "2.2.25";
-const APP_UPDATED_AT = "2026年9月13日";
+const APP_VERSION = "2.2.26";
+const APP_UPDATED_AT = "2026年9月19日";
+const CURRENT_USER_NAME = "子野井";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
@@ -895,7 +900,6 @@ export default function Home() {
   const [month, setMonth] = useState(today().slice(0, 7));
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("monthly");
   const [historyView, setHistoryView] = useState<"list" | "calendar">("list");
-  const [planPersonFilter, setPlanPersonFilter] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -1402,6 +1406,13 @@ export default function Home() {
     () => monthEntries.filter((entry) => entry.date <= currentDate),
     [monthEntries, currentDate],
   );
+  const historyMonthEntries = useMemo(
+    () =>
+      monthEntries.filter((entry) =>
+        isBeforeCurrentDate(entry.date, currentDate),
+      ),
+    [monthEntries, currentDate],
+  );
   const selectedYear = month.slice(0, 4);
   const completedYearEntries = useMemo(
     () =>
@@ -1420,17 +1431,23 @@ export default function Home() {
     [monthEntries, currentDate],
   );
   const tomorrowDate = nextDate(currentDate);
-  const planPeople = Array.from(new Set(entries.flatMap((entry) =>
-    entrySiteRows(entry).flatMap((row) => row.personnelNames.split(/[、,，]/).map((name) => name.trim()).filter(Boolean)),
-  ))).sort((a, b) => a.localeCompare(b, "ja"));
-  const matchesPlanPerson = (entry: Entry) => !planPersonFilter ||
-    entrySiteRows(entry).some((row) => row.personnelNames.split(/[、,，]/).some((name) => name.trim() === planPersonFilter));
+  const belongsToCurrentUser = (entry: Entry) =>
+    isCurrentUsersPlan(
+      entrySiteRows(entry).map((row) => row.personnelNames),
+      CURRENT_USER_NAME,
+    );
   const visibleRecordEntries =
     activeTab === "plans"
-      ? monthEntries.filter((entry) => entry.date >= currentDate && matchesPlanPerson(entry)).sort((a, b) => a.date.localeCompare(b.date))
-      : completedMonthEntries;
+      ? monthEntries
+          .filter(
+            (entry) => entry.date >= currentDate && belongsToCurrentUser(entry),
+          )
+          .sort((a, b) => a.date.localeCompare(b.date))
+      : historyMonthEntries;
   const planBoardEntries = entries
-    .filter((entry) => entry.date >= currentDate && matchesPlanPerson(entry))
+    .filter(
+      (entry) => entry.date >= currentDate && belongsToCurrentUser(entry),
+    )
     .sort((a, b) => a.date.localeCompare(b.date) || a.start.localeCompare(b.start));
   const planBuckets = splitUpcomingRecords(planBoardEntries, currentDate, tomorrowDate);
   const planSections = [
@@ -2013,6 +2030,13 @@ export default function Home() {
           ),
         ).sort((a, b) => a.localeCompare(b, "ja"));
   }, [entries, masterOptions.person]);
+  const masterPersonnelNames = useMemo(
+    () =>
+      masterOptions.person
+        .filter((option) => !option.archivedAt)
+        .map((option) => option.name),
+    [masterOptions.person],
+  );
   const knownWorkOptions = useMemo(() => {
     const custom = masterOptions.work
       .filter((option) => !option.archivedAt)
@@ -3408,6 +3432,18 @@ export default function Home() {
     );
   }
 
+  function toggleAllPersonnel(index: number) {
+    if (!masterPersonnelNames.length) return;
+    const selected = splitNames(formPersonnelNames[index]);
+    const allSelected = masterPersonnelNames.every((name) =>
+      selected.includes(name),
+    );
+    const next = allSelected
+      ? selected.filter((name) => !masterPersonnelNames.includes(name))
+      : [...new Set([...selected, ...masterPersonnelNames])];
+    updatePersonnelNames(index, next.join("、"));
+  }
+
   function addSite() {
     if (formSites.length < 5)
       setForm({
@@ -4645,8 +4681,30 @@ export default function Home() {
                                 </label>
                                 {knownPersonnelNames.length > 0 && (
                                   <div className="personnel-options">
-                                    <small>過去の名前から選択</small>
+                                    <small>作業者マスターから選択</small>
                                     <div>
+                                      {masterPersonnelNames.length > 0 && (
+                                        <button
+                                          type="button"
+                                          className={
+                                            masterPersonnelNames.every((name) =>
+                                              selectedNames.includes(name),
+                                            )
+                                              ? "selected"
+                                              : ""
+                                          }
+                                          onClick={() =>
+                                            toggleAllPersonnel(index)
+                                          }
+                                        >
+                                          {masterPersonnelNames.every((name) =>
+                                            selectedNames.includes(name),
+                                          )
+                                            ? "✓ "
+                                            : ""}
+                                          全員
+                                        </button>
+                                      )}
                                       {knownPersonnelNames.map((name) => (
                                         <button
                                           type="button"
@@ -6424,14 +6482,6 @@ export default function Home() {
                 <button type="button" className="plan-add-button" onClick={() => setActiveTab("entry")}>＋ 予定を入力</button>
               )}
             </div>
-            {activeTab === "plans" && (
-              <div className="plan-person-filters" aria-label="作業者で絞り込み">
-                <button type="button" className={!planPersonFilter ? "active" : ""} aria-pressed={!planPersonFilter} onClick={() => setPlanPersonFilter("")}>全員</button>
-                {planPeople.map((person) => (
-                  <button type="button" key={person} className={planPersonFilter === person ? "active" : ""} aria-pressed={planPersonFilter === person} onClick={() => setPlanPersonFilter(person)}>{person}</button>
-                ))}
-              </div>
-            )}
             <div className="plan-view-row">
               <div className="history-tools">
                 {(activeTab === "history" || historyView === "calendar") && <input
@@ -6673,7 +6723,7 @@ export default function Home() {
                               return <div className="record-site" key={`${entry.id}-site-${index}`}>
                                 <p>{row.site || row.location || row.work || "現場名の記録なし"}</p>
                                 <small className="record-detail">
-                                  {[row.location && row.site ? row.location : "", [startTimes[index] || startTimes[0], endTimes[index] || endTimes[0]].filter(Boolean).join("〜"), row.personnelNames, row.work].filter(Boolean).join("・")}
+                                  {[row.location && row.site ? row.location : "", [startTimes[index] || startTimes[0], endTimes[index] || endTimes[0]].filter(Boolean).join("〜"), activeTab === "history" ? row.personnelNames : "", row.work].filter(Boolean).join("・")}
                                 </small>
                                 <div className="record-site-actions">
                                   {(row.address || row.coordinates) && (
