@@ -1076,17 +1076,26 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    fetch("/api/masters?type=person")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.error || "作業者マスターを読み込めませんでした");
+        setMasterOptions((current) => ({ ...current, person: data.options }));
+      })
+      .catch((e) => setMasterMessage(e.message));
+  }, []);
+
+  useEffect(() => {
     if (activeTab !== "settings") return;
-    (["work", "person"] as const).forEach((type) =>
-      fetch(`/api/masters?type=${type}`)
-        .then(async (response) => {
-          const data = await response.json();
-          if (!response.ok)
-            throw new Error(data.error || "マスターを読み込めませんでした");
-          setMasterOptions((current) => ({ ...current, [type]: data.options }));
-        })
-        .catch((e) => setMasterMessage(e.message)),
-    );
+    fetch("/api/masters?type=work")
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok)
+          throw new Error(data.error || "作業内容マスターを読み込めませんでした");
+        setMasterOptions((current) => ({ ...current, work: data.options }));
+      })
+      .catch((e) => setMasterMessage(e.message));
   }, [activeTab]);
 
   useEffect(() => {
