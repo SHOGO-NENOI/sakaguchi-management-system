@@ -16,16 +16,50 @@
 - `.env` と秘密情報
 - 本番データベースおよびアップロード済みファイルの実データ
 
-## 必要な実行環境
+## 必要な実行環境（Mac・Windows共通）
 
-- Node.js 22.13.0以上
+- Node.js 22.13.0以上（Node.js 22系を推奨）
 - npm
+- Git
 - Sitesでの公開時はD1バインディング `DB` とR2バインディング `BUCKET`
 - 環境変数 `GOOGLE_OAUTH_ENCRYPTION_KEY`
 
 `GOOGLE_OAUTH_ENCRYPTION_KEY` は、32バイトのランダム値をBase64化した文字列を設定します。実際の値はこのZIPに含まれていません。
 
 Google OAuthのクライアントIDとクライアントシークレットはソースには含まれません。アプリの設定画面から登録し、D1へ暗号化保存する構成です。
+
+## 初回セットアップ
+
+Macでは「ターミナル」、Windowsでは「PowerShell」または「Windows Terminal」を使用します。WSLやGit Bashは必須ではありません。
+
+```bash
+git clone https://github.com/SHOGO-NENOI/sakaguchi-management-system.git
+cd sakaguchi-management-system/main-app
+npm ci
+npm test
+npm run dev
+```
+
+`npm run dev`に表示されたURLをブラウザーで開きます。終了は `Ctrl+C` です。
+
+## MacとWindowsを切り替える手順
+
+作業を始める前に、必ずGitHubの最新版を取得します。
+
+```bash
+git pull --ff-only
+```
+
+修正後はテストしてGitHubへ保存します。
+
+```bash
+npm test
+git add -A
+git commit -m "変更内容を短く記載"
+git push
+```
+
+`git push`が完了してから、もう一方のPCで `git pull --ff-only` を実行してください。同じファイルを両方のPCで同時に修正すると競合するため、PCを切り替える前に必ず保存・同期します。
 
 ## 開発の再開
 
@@ -59,9 +93,27 @@ npm run lint
 npm run typecheck
 ```
 
+### Windowsでの初回セットアップ
+
+- Node.js 22系（64-bit）とGit for Windowsをインストールします。
+- PowerShell、コマンドプロンプト、Windows Terminalのいずれでも同じnpmコマンドを使用できます。
+- プロジェクトはOneDrive配下を避け、通常のローカルフォルダーに置くとファイル監視が安定します。
+- Windowsでも `npm ci`、`npm run dev`、`npm test`、`npm run lint`、`npm run typecheck` をそのまま実行できます。
+- Windows固有の生成ファイルや改行差分がGitに混ざらないよう、`.gitattributes`で改行を統一しています。
+
+Windowsでの一括確認も `main-app` で次を実行します。
+
+```powershell
+npm ci
+npm test
+npm run lint
+npm run typecheck
+```
+
 ## アプリ固有の注意点
 
 - `.openai/hosting.json` には既存Sitesプロジェクトとの関連付けが含まれています。別プロジェクトとして複製する場合は、既存の `project_id` をそのまま流用せず、新しいSitesプロジェクトのIDに置き換えてください。
+- `.env*`、Googleクライアントシークレット、`GOOGLE_OAUTH_ENCRYPTION_KEY`、本番データをGitHubへ保存しないでください。PCごとの秘密情報は各端末で安全に設定します。
 
 ## 変更履歴
 

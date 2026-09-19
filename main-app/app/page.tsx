@@ -6508,12 +6508,8 @@ export default function Home() {
               </div>
             ) : visibleRecordEntries.length === 0 && activeTab === "history" && historyView === "list" ? (
               <div className="empty">
-                <span>{activeTab === "plans" ? "予" : "記"}</span>
-                <h3>
-                  {activeTab === "plans"
-                    ? "この月の予定はありません"
-                    : "この月の勤務記録はありません"}
-                </h3>
+                <span>記</span>
+                <h3>この月の勤務記録はありません</h3>
                 <p>入力タブから勤務内容を登録すると、ここに表示されます。</p>
               </div>
             ) : historyView === "calendar" ? (
