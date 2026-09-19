@@ -2,8 +2,8 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "sakaguchi-management-system",
   "main": "./worker/index.ts",
-  // Keep this at or below the newest date supported by the lockfile's workerd.
-  "compatibility_date": "2026-05-22",
+  "keep_vars": true,
+  "compatibility_date": "2026-09-19",
   "compatibility_flags": ["nodejs_compat"],
   "d1_databases": [
     {
@@ -14,7 +14,8 @@
     }
   ],
   "assets": {
-    "binding": "ASSETS"
+    "binding": "ASSETS",
+    "directory": "./dist/client"
   },
   "images": {
     "binding": "IMAGES"

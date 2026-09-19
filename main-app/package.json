@@ -14,7 +14,9 @@
     "validate:artifact": "node scripts/validate-artifact.mjs",
     "lint": "node scripts/run-local.mjs eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "node scripts/run-local.mjs tsc --noEmit",
-    "db:generate": "node scripts/run-local.mjs drizzle-kit generate"
+    "db:generate": "node scripts/run-local.mjs drizzle-kit generate",
+    "cf:types": "node scripts/run-local.mjs wrangler types",
+    "deploy:check": "node scripts/run-local.mjs wrangler deploy --dry-run"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",
@@ -23,8 +25,7 @@
     "react-dom": "19.2.6"
   },
   "devDependencies": {
-    "@cloudflare/vite-plugin": "1.37.1",
-    "@cloudflare/workers-types": "4.20260702.1",
+    "@cloudflare/vite-plugin": "^1.54.9",
     "@tailwindcss/postcss": "4.2.1",
     "@types/node": "22.19.19",
     "@types/react": "19.2.14",
@@ -39,7 +40,7 @@
     "typescript": "5.9.3",
     "vinext": "0.0.50",
     "vite": "8.0.13",
-    "wrangler": "4.92.0"
+    "wrangler": "^4.131.2"
   },
   "type": "module",
   "displayName": "坂口商会総合管理システム"

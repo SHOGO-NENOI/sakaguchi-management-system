@@ -49,6 +49,7 @@ const nodeBinaryEntries = {
   tsc: ["typescript", "bin", "tsc"],
   vinext: ["vinext", "dist", "cli.js"],
   vite: ["vite", "bin", "vite.js"],
+  wrangler: ["wrangler", "bin", "wrangler.js"],
 };
 
 export function localBinary(name) {
