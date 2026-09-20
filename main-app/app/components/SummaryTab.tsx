@@ -31,7 +31,13 @@ type SummaryTabProps = {
   };
   formatMinutes: (minutes: number) => string;
   annualHotelNights: number;
-  estimatedPay: { base: number; extra: number; total: number } | null;
+  estimatedPay: {
+    base: number;
+    extra: number;
+    weeklyExtra: number;
+    tripAllowance: number;
+    total: number;
+  } | null;
   paySettings: PaySettings;
   updatePaySettings: (value: PaySettings) => void;
   plannedMonthEntries: Entry[];
@@ -309,6 +315,16 @@ export default function SummaryTab({
             <span>
               早出・残業 ¥{estimatedPay.extra.toLocaleString("ja-JP")}
             </span>
+            {estimatedPay.weeklyExtra > 0 && (
+              <span>
+                週40時間超過分 ¥{estimatedPay.weeklyExtra.toLocaleString("ja-JP")}
+              </span>
+            )}
+            {estimatedPay.tripAllowance > 0 && (
+              <span>
+                出張手当 ¥{estimatedPay.tripAllowance.toLocaleString("ja-JP")}
+              </span>
+            )}
           </div>
         )}
         <details className="pay-settings">
@@ -373,8 +389,28 @@ export default function SummaryTab({
                 <b>倍</b>
               </div>
             </label>
+            <label>
+              <span>出張手当（1日あたり）</span>
+              <div className="pay-input-wrap">
+                <b>¥</b>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="100"
+                  placeholder="例：1500"
+                  value={paySettings.tripAllowance}
+                  onChange={(e) =>
+                    updatePaySettings({
+                      ...paySettings,
+                      tripAllowance: e.target.value,
+                    })
+                  }
+                />
+              </div>
+            </label>
             <p>
-              計算：日給×勤務日数（半日は0.5日）＋早出・残業時間×日給換算の時間単価×倍率。税金・保険・手当などは含まない概算です。
+              計算：日給×勤務日数（半日は0.5日）＋早出・残業時間×日給換算の時間単価×倍率＋週40時間を超えた分×日給換算の時間単価×倍率＋出張日数×出張手当。税金・保険などは含まない概算です。
             </p>
           </div>
         </details>

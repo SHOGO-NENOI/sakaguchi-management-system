@@ -29,6 +29,13 @@ export function nthMonday(year: number, month: number, nth: number) {
   return 1 + ((8 - firstWeekday) % 7) + (nth - 1) * 7;
 }
 
+// 日曜始まりの週の起点日を返す（週40時間の判定に使用）。
+export function startOfWeekSunday(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  const weekday = new Date(Date.UTC(year, month - 1, day)).getUTCDay();
+  return addDays(date, -weekday);
+}
+
 export function japaneseHolidays(year: number) {
   const holidays = new Map<string, string>();
   const add = (month: number, day: number, name: string) =>

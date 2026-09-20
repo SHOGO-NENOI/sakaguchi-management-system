@@ -29,6 +29,7 @@ import {
   toMinutes,
   extraMinutes,
   workMinutes,
+  startOfWeekSunday,
   shiftBoardRange,
   shiftBoardFingerprint,
   formatMinutes,
@@ -74,6 +75,7 @@ const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
   overtimeMultiplier: "1.25",
+  tripAllowance: "1500",
 };
 
 const workTypes: WorkType[] = ["1日", "半日", "休み"];
@@ -841,19 +843,58 @@ export default function Home() {
       ),
     [summaryEntries],
   );
+  const weeklyOvertimeMinutes = useMemo(() => {
+    const weeklyNormalMinutes = new Map<string, number>();
+    summaryEntries.forEach((entry) => {
+      const extra = extraMinutes(entry);
+      const normal = Math.max(
+        0,
+        workMinutes(entry) - extra.early - extra.overtime,
+      );
+      const week = startOfWeekSunday(entry.date);
+      weeklyNormalMinutes.set(
+        week,
+        (weeklyNormalMinutes.get(week) ?? 0) + normal,
+      );
+    });
+    let total = 0;
+    weeklyNormalMinutes.forEach((minutes) => {
+      total += Math.max(0, minutes - 40 * 60);
+    });
+    return total;
+  }, [summaryEntries]);
   const estimatedPay = useMemo(() => {
     const dailyRate = Number(paySettings.dailyRate);
     const standardHours = Number(paySettings.standardHours);
     const multiplier = Number(paySettings.overtimeMultiplier);
+    const tripAllowancePerDay = Number(paySettings.tripAllowance);
     if (!dailyRate || !standardHours || !multiplier) return null;
+    const hourlyRate = dailyRate / standardHours;
     const base = Math.round(summary.days * dailyRate);
-    const extra = Math.round(
-      ((summary.early + summary.overtime) / 60) *
-        (dailyRate / standardHours) *
-        multiplier,
+    const dailyExtra = Math.round(
+      ((summary.early + summary.overtime) / 60) * hourlyRate * multiplier,
     );
-    return { base, extra, total: base + extra };
-  }, [paySettings, summary.days, summary.early, summary.overtime]);
+    const weeklyExtra = Math.round(
+      (weeklyOvertimeMinutes / 60) * hourlyRate * multiplier,
+    );
+    const tripAllowance = Math.round(
+      summary.trips * (tripAllowancePerDay || 0),
+    );
+    return {
+      base,
+      extra: dailyExtra,
+      weeklyExtra,
+      tripAllowance,
+      total: base + dailyExtra + weeklyExtra + tripAllowance,
+    };
+  }, [
+    paySettings,
+    summary.days,
+    summary.early,
+    summary.overtime,
+    summary.trips,
+    weeklyOvertimeMinutes,
+  ]);
   const selfDinnerEntries = useMemo(
     () =>
       completedMonthEntries.filter(

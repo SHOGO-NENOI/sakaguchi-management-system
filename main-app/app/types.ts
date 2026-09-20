@@ -40,6 +40,7 @@ export type PaySettings = {
   dailyRate: string;
   standardHours: string;
   overtimeMultiplier: string;
+  tripAllowance: string;
 };
 export type SiteCardData = {
   masterId?: number;
