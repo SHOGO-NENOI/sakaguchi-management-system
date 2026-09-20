@@ -661,6 +661,15 @@ function splitNames(value: string) {
     .filter(Boolean);
 }
 
+// 通信・JSON解析など技術的な例外文をそのまま画面に出さないための変換。
+// 意図的に投げた日本語メッセージだけを表示し、それ以外はfallbackへ差し替える。
+function errorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && /[぀-ヿ一-龯]/.test(error.message)) {
+    return error.message;
+  }
+  return fallback;
+}
+
 const today = () => {
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Tokyo",
@@ -1070,7 +1079,8 @@ export default function Home() {
         }
       })
       .catch((e) => {
-        if (e instanceof Error && e.name !== "AbortError") setError(e.message);
+        if (e instanceof Error && e.name !== "AbortError")
+          setError(errorMessage(e, "履歴を読み込めませんでした"));
       });
     return () => controller.abort();
   }, []);
@@ -1083,7 +1093,9 @@ export default function Home() {
           throw new Error(data.error || "作業者マスターを読み込めませんでした");
         setMasterOptions((current) => ({ ...current, person: data.options }));
       })
-      .catch((e) => setMasterMessage(e.message));
+      .catch((e) =>
+        setMasterMessage(errorMessage(e, "作業者マスターを読み込めませんでした")),
+      );
   }, []);
 
   useEffect(() => {
@@ -1095,7 +1107,9 @@ export default function Home() {
           throw new Error(data.error || "作業内容マスターを読み込めませんでした");
         setMasterOptions((current) => ({ ...current, work: data.options }));
       })
-      .catch((e) => setMasterMessage(e.message));
+      .catch((e) =>
+        setMasterMessage(errorMessage(e, "作業内容マスターを読み込めませんでした")),
+      );
   }, [activeTab]);
 
   useEffect(() => {
@@ -1122,7 +1136,7 @@ export default function Home() {
         })
         .catch((e) => {
           if (e instanceof Error && e.name !== "AbortError")
-            setNewSiteMessage(e.message);
+            setNewSiteMessage(errorMessage(e, "現場一覧を読み込めませんでした"));
         });
     }, 250);
     return () => {
@@ -1174,7 +1188,7 @@ export default function Home() {
         if (error instanceof Error && error.name !== "AbortError")
           setSiteDocumentMessages((current) => ({
             ...current,
-            __counts__: error.message,
+            __counts__: errorMessage(error, "資料件数を読み込めませんでした"),
           }));
       });
     return () => controller.abort();
@@ -2279,9 +2293,7 @@ export default function Home() {
           await registerPlannedSites(data.entry);
         } catch (error) {
           siteWarning =
-            error instanceof Error
-              ? error.message
-              : "現場一覧へ登録できませんでした";
+            errorMessage(error, "現場一覧へ登録できませんでした");
         }
       }
       setMonth(form.date.slice(0, 7));
@@ -2293,7 +2305,7 @@ export default function Home() {
           `勤務記録は保存しました。${[data.warning, siteWarning].filter(Boolean).join(" ")}`,
         );
     } catch (e) {
-      setError(e instanceof Error ? e.message : "保存できませんでした");
+      setError(errorMessage(e, "保存できませんでした"));
     } finally {
       setSaving(false);
     }
@@ -2611,7 +2623,7 @@ export default function Home() {
     } catch (e) {
       if (showMessage)
         setSyncManagerMessage(
-          e instanceof Error ? e.message : "照合できませんでした",
+          errorMessage(e, "照合できませんでした"),
         );
     } finally {
       setGoogleSyncing(false);
@@ -2830,7 +2842,7 @@ export default function Home() {
       setNewSiteMessage(`「${data.site.site}」を追加しました`);
     } catch (error) {
       setNewSiteMessage(
-        error instanceof Error ? error.message : "現場を追加できませんでした",
+        errorMessage(error, "現場を追加できませんでした"),
       );
     } finally {
       setNewSiteSaving(false);
@@ -2946,9 +2958,7 @@ export default function Home() {
       setSiteDocumentMessages((current) => ({
         ...current,
         [siteKey]:
-          error instanceof Error
-            ? error.message
-            : "現場資料を読み込めませんでした",
+          errorMessage(error, "現場資料を読み込めませんでした"),
       }));
     } finally {
       setSiteDocumentLoadingKey(null);
@@ -3002,7 +3012,7 @@ export default function Home() {
       setSiteDocumentMessages((current) => ({
         ...current,
         [siteKey]:
-          error instanceof Error ? error.message : "資料を保存できませんでした",
+          errorMessage(error, "資料を保存できませんでした"),
       }));
     } finally {
       setSiteDocumentUploadingKey(null);
@@ -3042,7 +3052,7 @@ export default function Home() {
       setSiteDocumentMessages((current) => ({
         ...current,
         [siteKey]:
-          error instanceof Error ? error.message : "資料を削除できませんでした",
+          errorMessage(error, "資料を削除できませんでした"),
       }));
     }
   }
@@ -3522,9 +3532,7 @@ export default function Home() {
       setToolSets(data.sets);
     } catch (error) {
       setToolMessage(
-        error instanceof Error
-          ? error.message
-          : "道具一覧を読み込めませんでした",
+        errorMessage(error, "道具一覧を読み込めませんでした"),
       );
     } finally {
       setToolsReady(true);
@@ -3555,7 +3563,7 @@ export default function Home() {
       setToolMessage(`「${name}」を追加しました`);
     } catch (error) {
       setToolMessage(
-        error instanceof Error ? error.message : "セットを追加できませんでした",
+        errorMessage(error, "セットを追加できませんでした"),
       );
     }
   }
@@ -3584,7 +3592,7 @@ export default function Home() {
       setToolMessage(`「${name}」を追加しました`);
     } catch (error) {
       setToolMessage(
-        error instanceof Error ? error.message : "道具を追加できませんでした",
+        errorMessage(error, "道具を追加できませんでした"),
       );
     }
   }
@@ -3620,9 +3628,7 @@ export default function Home() {
         })),
       );
       setToolMessage(
-        error instanceof Error
-          ? error.message
-          : "チェックを保存できませんでした",
+        errorMessage(error, "チェックを保存できませんでした"),
       );
     }
   }
@@ -3707,7 +3713,7 @@ export default function Home() {
       setToolMessage("並び順を保存しました");
     } catch (error) {
       setToolMessage(
-        error instanceof Error ? error.message : "並び順を保存できませんでした",
+        errorMessage(error, "並び順を保存できませんでした"),
       );
       void loadTools();
     }
@@ -3791,9 +3797,7 @@ export default function Home() {
       setToolMessage("チェックをリセットしました");
     } catch (error) {
       setToolMessage(
-        error instanceof Error
-          ? error.message
-          : "チェックをリセットできませんでした",
+        errorMessage(error, "チェックをリセットできませんでした"),
       );
     }
   }
@@ -3843,7 +3847,7 @@ export default function Home() {
       setMasterMessage(`「${name}」を保存しました`);
     } catch (error) {
       setMasterMessage(
-        error instanceof Error ? error.message : "保存できませんでした",
+        errorMessage(error, "保存できませんでした"),
       );
     }
   }
@@ -3893,7 +3897,7 @@ export default function Home() {
       );
     } catch (error) {
       setMasterMessage(
-        error instanceof Error ? error.message : "更新できませんでした",
+        errorMessage(error, "更新できませんでした"),
       );
     }
   }
@@ -3930,7 +3934,7 @@ export default function Home() {
       setToolMessage(`「${currentName}」を「${name}」へ変更しました`);
     } catch (error) {
       setToolMessage(
-        error instanceof Error ? error.message : "編集できませんでした",
+        errorMessage(error, "編集できませんでした"),
       );
     }
   }
@@ -3960,7 +3964,7 @@ export default function Home() {
       );
     } catch (error) {
       setSiteNameMessage(
-        error instanceof Error ? error.message : "非表示にできませんでした",
+        errorMessage(error, "非表示にできませんでした"),
       );
     }
   }
@@ -4002,7 +4006,7 @@ export default function Home() {
       );
     } catch (error) {
       setToolMessage(
-        error instanceof Error ? error.message : "削除できませんでした",
+        errorMessage(error, "削除できませんでした"),
       );
     }
   }
