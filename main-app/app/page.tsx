@@ -1581,17 +1581,6 @@ export default function Home() {
       setError("各現場の終了時刻は開始時刻より後に設定してください");
       return;
     }
-    if (
-      form.businessTrip &&
-      (!form.dinnerType || (!formIsPlanned && form.dinnerType === "未定"))
-    ) {
-      setError(
-        formIsPlanned
-          ? "出張予定の夜ご飯を選択してください"
-          : "出張日の夜ご飯を実際の内容に変更してください",
-      );
-      return;
-    }
     setSaving(true);
     setError("");
     try {

@@ -259,6 +259,34 @@ export default function EntryTab({
           </div>
         ) : (
           <div className="field-grid details">
+            <fieldset className="wide trip-field">
+              <legend>出張</legend>
+              <div className="trip-options">
+                <button
+                  type="button"
+                  className={!form.businessTrip ? "selected" : ""}
+                  aria-pressed={!form.businessTrip}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      businessTrip: false,
+                      dinnerType: "",
+                      hotelName: "",
+                    })
+                  }
+                >
+                  通常勤務
+                </button>
+                <button
+                  type="button"
+                  className={form.businessTrip ? "selected" : ""}
+                  aria-pressed={form.businessTrip}
+                  onClick={() => setForm({ ...form, businessTrip: true })}
+                >
+                  出張
+                </button>
+              </div>
+            </fieldset>
             <fieldset className="site-field">
               <legend>
                 場所・現場情報 <em>最大5か所・履歴から選択可</em>
@@ -601,38 +629,13 @@ export default function EntryTab({
                 </div>
               )}
             </fieldset>
-            <fieldset className="wide trip-field">
-              <legend>出張</legend>
-              <div className="trip-options">
-                <button
-                  type="button"
-                  className={!form.businessTrip ? "selected" : ""}
-                  aria-pressed={!form.businessTrip}
-                  onClick={() =>
-                    setForm({
-                      ...form,
-                      businessTrip: false,
-                      dinnerType: "",
-                      hotelName: "",
-                    })
-                  }
-                >
-                  通常勤務
-                </button>
-                <button
-                  type="button"
-                  className={form.businessTrip ? "selected" : ""}
-                  aria-pressed={form.businessTrip}
-                  onClick={() => setForm({ ...form, businessTrip: true })}
-                >
-                  出張
-                </button>
-              </div>
-              {form.businessTrip && (
+            {form.businessTrip && (
+              <fieldset className="wide dinner-field">
+                <legend>
+                  出張の宿泊・食事 <em>任意</em>
+                </legend>
                 <div className="dinner-panel">
-                  <span>
-                    夜ご飯 <em>必須</em>
-                  </span>
+                  <span>夜ご飯</span>
                   <div className="dinner-options">
                     <button
                       type="button"
@@ -691,9 +694,7 @@ export default function EntryTab({
                     ))}
                   </datalist>
                   <label className="hotel-input">
-                    <span>
-                      宿泊ホテル <em>任意・過去のホテルから選択可</em>
-                    </span>
+                    <span>宿泊ホテル</span>
                     <input
                       list="hotel-history"
                       placeholder="例：〇〇ホテル熊本"
@@ -704,8 +705,8 @@ export default function EntryTab({
                     />
                   </label>
                 </div>
-              )}
-            </fieldset>
+              </fieldset>
+            )}
           </div>
         )}
         {error && <p className="error-message">{error}</p>}
