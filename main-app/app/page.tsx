@@ -761,8 +761,8 @@ export default function Home() {
     { id: "later", title: "明日以降の予定", date: "", entries: planBuckets.later },
   ];
   const shiftBoardEntries = useMemo(
-    () => [...monthEntries].sort((a, b) => a.date.localeCompare(b.date)),
-    [monthEntries],
+    () => [...completedMonthEntries].sort((a, b) => a.date.localeCompare(b.date)),
+    [completedMonthEntries],
   );
   const shiftBoardGroups = useMemo(() => {
     const normal: Entry[] = [];
