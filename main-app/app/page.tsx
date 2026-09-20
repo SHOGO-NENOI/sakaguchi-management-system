@@ -3547,6 +3547,7 @@ export default function Home() {
             siteDocumentsByKey={siteDocumentsByKey}
             siteDocumentCounts={siteDocumentCounts}
             coordinateAddresses={coordinateAddresses}
+            coordinateRegions={coordinateRegions}
             loadSiteDocuments={loadSiteDocuments}
             openSiteNameEditor={openSiteNameEditor}
             openSiteLocationEditor={openSiteLocationEditor}

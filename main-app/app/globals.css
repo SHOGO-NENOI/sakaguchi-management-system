@@ -2342,6 +2342,87 @@ textarea {
   font-weight: 800;
   white-space: nowrap;
 }
+.site-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px 6px;
+}
+.site-card-top .site-card-identity {
+  min-width: 0;
+}
+.site-card-top .site-card-identity h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  color: var(--ink);
+  font-size: 15px;
+  font-weight: 800;
+}
+.site-card-top .site-card-identity small {
+  display: block;
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.site-card-top .site-row-last {
+  flex: none;
+  text-align: right;
+}
+.site-card-button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.site-card-button-row > a,
+.site-card-button-row > button,
+.site-materials-toggle > summary,
+.site-history-toggle > summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 26px;
+  padding: 3px 7px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.site-materials-toggle > summary,
+.site-history-toggle > summary {
+  list-style: none;
+}
+.site-materials-toggle > summary::-webkit-details-marker,
+.site-history-toggle > summary::-webkit-details-marker {
+  display: none;
+}
+.site-nav-link { background: #087454; border-color: #087454; }
+.site-map-link { background: #2771cb; border-color: #3478d1; }
+.site-materials-toggle > summary { color: #271500; background: #f6ac42; }
+.site-history-toggle > summary {
+  color: var(--ink);
+  background: var(--soft);
+  border-color: var(--line);
+}
+.site-card-button-row > button {
+  color: var(--ink);
+  background: var(--soft);
+  border-color: var(--line);
+}
+.site-card-button-row > button.danger {
+  color: #9f3941;
+  background: #fdf1f2;
+  border-color: #e3b8bc;
+}
+.site-card-history {
+  padding: 8px 12px 12px;
+}
 .site-address {
   margin-top: 6px;
   color: #62716c;

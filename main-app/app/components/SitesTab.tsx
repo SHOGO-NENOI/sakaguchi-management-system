@@ -1,16 +1,18 @@
 import type { Dispatch, SetStateAction } from "react";
 import { coordinateKey } from "@/app/lib/coordinates";
 import {
+  cardRegionInfo,
   elapsedDays,
   formatDate,
   formatFileSize,
   mapsUrl,
+  navigationUrl,
   parsePositionInput,
   positionInputValue,
   siteCardKey,
   today,
 } from "@/app/lib/entry-helpers";
-import type { SiteCardData, SiteDocument } from "@/app/types";
+import type { RegionInfo, SiteCardData, SiteDocument } from "@/app/types";
 
 type SiteDraft = { site: string; location: string; address: string; coordinates: string };
 type GroupedSiteCards = {
@@ -49,6 +51,7 @@ type SitesTabProps = {
   siteDocumentsByKey: Record<string, SiteDocument[]>;
   siteDocumentCounts: Record<string, number> | null;
   coordinateAddresses: Record<string, string>;
+  coordinateRegions: Record<string, RegionInfo>;
   loadSiteDocuments: (siteKey: string, force?: boolean) => void;
   openSiteNameEditor: (card: SiteCardData) => void;
   openSiteLocationEditor: (card: SiteCardData) => void;
@@ -101,6 +104,7 @@ export default function SitesTab({
   siteDocumentsByKey,
   siteDocumentCounts,
   coordinateAddresses,
+  coordinateRegions,
   loadSiteDocuments,
   openSiteNameEditor,
   openSiteLocationEditor,
@@ -347,42 +351,54 @@ export default function SitesTab({
                                 coordinateKey(card.coordinates)
                               ] ||
                               "";
+                            const region = cardRegionInfo(
+                              card,
+                              coordinateRegions,
+                            );
+                            const editing =
+                              editingSiteNameKey === cardKey ||
+                              editingSiteLocationKey === cardKey;
                             return (
-                              <details
-                                className="site-card"
-                                key={cardKey}
-                                onToggle={(event) => {
-                                  if (event.currentTarget.open)
-                                    void loadSiteDocuments(cardKey);
-                                }}
-                              >
-                                <summary className="site-card-row">
+                              <article className="site-card" key={cardKey}>
+                                <div className="site-card-top">
                                   <div className="site-card-identity">
+                                    <h3>{card.site || "現場名不明"}</h3>
                                     <small>
-                                      {card.location || "場所未入力"}
+                                      {region.prefecture}　{region.municipality}
                                     </small>
-                                    <div className="site-name-line">
-                                      <h3>{card.site || "現場名不明"}</h3>
-                                    </div>
                                   </div>
                                   <div className="site-row-last">
-                                    <small>最終訪問</small>
+                                    <small>前回訪問から</small>
                                     <strong>
-                                      {card.lastDate
-                                        ? formatDate(card.lastDate)
-                                        : "未訪問"}
+                                      {days === null
+                                        ? "未訪問"
+                                        : days === 0
+                                          ? "今日"
+                                          : `${days}日経過`}
                                     </strong>
                                   </div>
-                                  <em className="site-row-elapsed">
-                                    {days === null
-                                      ? "新規"
-                                      : days === 0
-                                        ? "今日"
-                                        : `${days}日経過`}
-                                  </em>
+                                </div>
+                                <div className="site-card-button-row">
                                   {(resolvedAddress || card.coordinates) && (
                                     <a
-                                      className="map-button"
+                                      className="site-nav-link"
+                                      href={navigationUrl(
+                                        resolvedAddress,
+                                        card.coordinates,
+                                      )}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      aria-label={`${card.site || card.location || "現場"}まで車でナビを開く`}
+                                    >
+                                      🚚 ナビ
+                                    </a>
+                                  )}
+                                  {(resolvedAddress ||
+                                    card.coordinates ||
+                                    card.site ||
+                                    card.location) && (
+                                    <a
+                                      className="site-map-link"
                                       href={mapsUrl(
                                         resolvedAddress,
                                         card.coordinates,
@@ -391,20 +407,133 @@ export default function SitesTab({
                                       )}
                                       target="_blank"
                                       rel="noreferrer"
-                                      onClick={(event) =>
-                                        event.stopPropagation()
-                                      }
+                                      aria-label={`${card.site || card.location || "現場"}の地図を開く`}
                                     >
-                                      地図 ↗
+                                      🗺️ 地図
                                     </a>
                                   )}
-                                  <span className="site-row-open">
-                                    詳細
-                                  </span>
-                                </summary>
-                                <div className="site-card-expanded">
-                                  <div className="site-card-location">
-                                    <div>
+                                  <details
+                                    className="site-materials-toggle"
+                                    onToggle={(event) => {
+                                      if (event.currentTarget.open)
+                                        void loadSiteDocuments(cardKey);
+                                    }}
+                                  >
+                                    <summary>
+                                      📎 資料
+                                      {documentCount
+                                        ? `（${documentCount}）`
+                                        : ""}
+                                    </summary>
+                                    <div className="site-documents">
+                                      <header>
+                                        <label
+                                          className={
+                                            siteDocumentUploadingKey ===
+                                            cardKey
+                                              ? "uploading"
+                                              : ""
+                                          }
+                                        >
+                                          <input
+                                            type="file"
+                                            accept="image/*,.pdf,application/pdf"
+                                            multiple
+                                            disabled={
+                                              siteDocumentUploadingKey ===
+                                              cardKey
+                                            }
+                                            onChange={(event) => {
+                                              void uploadSiteDocuments(
+                                                card,
+                                                event.currentTarget.files,
+                                              );
+                                              event.currentTarget.value =
+                                                "";
+                                            }}
+                                          />
+                                          {siteDocumentUploadingKey ===
+                                          cardKey
+                                            ? "保存中…"
+                                            : "画像・PDFを追加"}
+                                        </label>
+                                      </header>
+                                      {siteDocumentLoadingKey === cardKey &&
+                                      !documents ? (
+                                        <p className="site-document-empty">
+                                          資料を読み込んでいます…
+                                        </p>
+                                      ) : documents?.length ? (
+                                        <div className="site-document-list">
+                                          {documents.map((document) => (
+                                            <div
+                                              className="site-document-row"
+                                              key={document.id}
+                                            >
+                                              <a
+                                                href={`/api/site-documents/file?id=${document.id}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                              >
+                                                <b>
+                                                  {document.contentType ===
+                                                  "application/pdf"
+                                                    ? "PDF"
+                                                    : "画像"}
+                                                </b>
+                                                <span>
+                                                  <strong>
+                                                    {document.fileName}
+                                                  </strong>
+                                                  <small>
+                                                    {formatFileSize(
+                                                      document.size,
+                                                    )}
+                                                    ・
+                                                    {new Intl.DateTimeFormat(
+                                                      "ja-JP",
+                                                      {
+                                                        month: "numeric",
+                                                        day: "numeric",
+                                                      },
+                                                    ).format(
+                                                      new Date(
+                                                        document.uploadedAt,
+                                                      ),
+                                                    )}
+                                                  </small>
+                                                </span>
+                                              </a>
+                                              <button
+                                                type="button"
+                                                aria-label={`${document.fileName}を削除`}
+                                                onClick={() =>
+                                                  deleteSiteDocument(
+                                                    card,
+                                                    document,
+                                                  )
+                                                }
+                                              >
+                                                削除
+                                              </button>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="site-document-empty">
+                                          除草範囲の図面や現場画像を保存できます。
+                                        </p>
+                                      )}
+                                      {siteDocumentMessages[cardKey] && (
+                                        <p className="site-document-message">
+                                          {siteDocumentMessages[cardKey]}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </details>
+                                  <details className="site-history-toggle">
+                                    <summary>📋 履歴</summary>
+                                    <div className="site-card-history">
                                       {resolvedAddress && (
                                         <p className="site-address">
                                           {resolvedAddress}
@@ -415,42 +544,76 @@ export default function SitesTab({
                                           {card.coordinates}
                                         </p>
                                       )}
+                                      <dl className="site-stats">
+                                        <div>
+                                          <dt>訪問</dt>
+                                          <dd>{card.visits}回</dd>
+                                        </div>
+                                        <div>
+                                          <dt>勤務</dt>
+                                          <dd>{card.workDays}日</dd>
+                                        </div>
+                                        <div>
+                                          <dt>出張</dt>
+                                          <dd>{card.tripCount}回</dd>
+                                        </div>
+                                      </dl>
+                                      <div className="site-card-detail">
+                                        <strong>作業内容</strong>
+                                        <p>
+                                          {[...card.works].join("・") ||
+                                            "記録なし"}
+                                        </p>
+                                      </div>
+                                      <div className="site-card-detail">
+                                        <strong>一緒に行った人</strong>
+                                        <p>
+                                          {[...card.people].join("、") ||
+                                            "記録なし"}
+                                        </p>
+                                      </div>
+                                      <div className="site-card-detail">
+                                        <strong>最近のメモ</strong>
+                                        {latestNotes.length ? (
+                                          <ul>
+                                            {latestNotes.map((note) => (
+                                              <li
+                                                key={`${note.date}-${note.note}`}
+                                              >
+                                                <span>
+                                                  {formatDate(note.date)}
+                                                </span>
+                                                {note.note}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        ) : (
+                                          <p>メモはありません</p>
+                                        )}
+                                      </div>
                                     </div>
-                                    <div className="site-card-actions">
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openSiteNameEditor(card)
-                                        }
-                                      >
-                                        {editingSiteNameKey === cardKey
-                                          ? "閉じる"
-                                          : "現場名を編集"}
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() =>
-                                          openSiteLocationEditor(card)
-                                        }
-                                      >
-                                        {editingSiteLocationKey ===
-                                        cardKey
-                                          ? "閉じる"
-                                          : "現場情報を編集"}
-                                      </button>
-                                      {card.masterId && (
-                                        <button
-                                          className="danger"
-                                          type="button"
-                                          onClick={() =>
-                                            archiveSite(card)
-                                          }
-                                        >
-                                          非表示
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
+                                  </details>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      openSiteNameEditor(card);
+                                      openSiteLocationEditor(card);
+                                    }}
+                                  >
+                                    {editing ? "閉じる" : "編集"}
+                                  </button>
+                                  {card.masterId && (
+                                    <button
+                                      className="danger"
+                                      type="button"
+                                      onClick={() => archiveSite(card)}
+                                    >
+                                      非表示
+                                    </button>
+                                  )}
+                                </div>
+                                {editing && (
+                                <div className="site-card-expanded">
                                   {editingSiteNameKey === cardKey && (
                                     <div className="site-name-editor">
                                       <label>
@@ -544,166 +707,9 @@ export default function SitesTab({
                                       )}
                                     </div>
                                   )}
-                                  <section className="site-documents">
-                                    <header>
-                                      <div>
-                                        <strong>現場資料</strong>
-                                        <span>
-                                          {documentCount ?? 0}件
-                                        </span>
-                                      </div>
-                                      <label
-                                        className={
-                                          siteDocumentUploadingKey ===
-                                          cardKey
-                                            ? "uploading"
-                                            : ""
-                                        }
-                                      >
-                                        <input
-                                          type="file"
-                                          accept="image/*,.pdf,application/pdf"
-                                          multiple
-                                          disabled={
-                                            siteDocumentUploadingKey ===
-                                            cardKey
-                                          }
-                                          onChange={(event) => {
-                                            void uploadSiteDocuments(
-                                              card,
-                                              event.currentTarget.files,
-                                            );
-                                            event.currentTarget.value =
-                                              "";
-                                          }}
-                                        />
-                                        {siteDocumentUploadingKey ===
-                                        cardKey
-                                          ? "保存中…"
-                                          : "画像・PDFを追加"}
-                                      </label>
-                                    </header>
-                                    {siteDocumentLoadingKey === cardKey &&
-                                    !documents ? (
-                                      <p className="site-document-empty">
-                                        資料を読み込んでいます…
-                                      </p>
-                                    ) : documents?.length ? (
-                                      <div className="site-document-list">
-                                        {documents.map((document) => (
-                                          <div
-                                            className="site-document-row"
-                                            key={document.id}
-                                          >
-                                            <a
-                                              href={`/api/site-documents/file?id=${document.id}`}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                            >
-                                              <b>
-                                                {document.contentType ===
-                                                "application/pdf"
-                                                  ? "PDF"
-                                                  : "画像"}
-                                              </b>
-                                              <span>
-                                                <strong>
-                                                  {document.fileName}
-                                                </strong>
-                                                <small>
-                                                  {formatFileSize(
-                                                    document.size,
-                                                  )}
-                                                  ・
-                                                  {new Intl.DateTimeFormat(
-                                                    "ja-JP",
-                                                    {
-                                                      month: "numeric",
-                                                      day: "numeric",
-                                                    },
-                                                  ).format(
-                                                    new Date(
-                                                      document.uploadedAt,
-                                                    ),
-                                                  )}
-                                                </small>
-                                              </span>
-                                            </a>
-                                            <button
-                                              type="button"
-                                              aria-label={`${document.fileName}を削除`}
-                                              onClick={() =>
-                                                deleteSiteDocument(
-                                                  card,
-                                                  document,
-                                                )
-                                              }
-                                            >
-                                              削除
-                                            </button>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <p className="site-document-empty">
-                                        除草範囲の図面や現場画像を保存できます。
-                                      </p>
-                                    )}
-                                    {siteDocumentMessages[cardKey] && (
-                                      <p className="site-document-message">
-                                        {siteDocumentMessages[cardKey]}
-                                      </p>
-                                    )}
-                                  </section>
-                                  <dl className="site-stats">
-                                    <div>
-                                      <dt>訪問</dt>
-                                      <dd>{card.visits}回</dd>
-                                    </div>
-                                    <div>
-                                      <dt>勤務</dt>
-                                      <dd>{card.workDays}日</dd>
-                                    </div>
-                                    <div>
-                                      <dt>出張</dt>
-                                      <dd>{card.tripCount}回</dd>
-                                    </div>
-                                  </dl>
-                                  <div className="site-card-detail">
-                                    <strong>作業内容</strong>
-                                    <p>
-                                      {[...card.works].join("・") ||
-                                        "記録なし"}
-                                    </p>
-                                  </div>
-                                  <div className="site-card-detail">
-                                    <strong>一緒に行った人</strong>
-                                    <p>
-                                      {[...card.people].join("、") ||
-                                        "記録なし"}
-                                    </p>
-                                  </div>
-                                  <div className="site-card-detail">
-                                    <strong>最近のメモ</strong>
-                                    {latestNotes.length ? (
-                                      <ul>
-                                        {latestNotes.map((note) => (
-                                          <li
-                                            key={`${note.date}-${note.note}`}
-                                          >
-                                            <span>
-                                              {formatDate(note.date)}
-                                            </span>
-                                            {note.note}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    ) : (
-                                      <p>メモはありません</p>
-                                    )}
-                                  </div>
                                 </div>
-                              </details>
+                                )}
+                              </article>
                             );
                           })}
                         </div>
