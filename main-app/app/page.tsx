@@ -1394,7 +1394,7 @@ export default function Home() {
         localStorage.getItem("worknote-reminded-date") === date
       )
         return;
-      new Notification("坂口商会総合管理システム｜入力のお知らせ", {
+      new Notification("坂口商会勤怠管理アプリ（個人用）｜入力のお知らせ", {
         body: "今日の勤務記録がまだ入力されていません。忘れないうちに記録しましょう。",
       });
       localStorage.setItem("worknote-reminded-date", date);
@@ -4018,7 +4018,7 @@ export default function Home() {
           </span>
           <div>
             <div className="brand-title">
-              <strong>坂口商会総合管理システム</strong>
+              <strong>坂口商会勤怠管理アプリ（個人用）</strong>
               <span className="app-version">v{APP_VERSION}</span>
             </div>
             <small>勤怠・現場・道具を一元管理</small>

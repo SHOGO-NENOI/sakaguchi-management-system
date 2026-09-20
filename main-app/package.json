@@ -43,5 +43,5 @@
     "wrangler": "^4.131.2"
   },
   "type": "module",
-  "displayName": "坂口商会総合管理システム"
+  "displayName": "坂口商会勤怠管理アプリ（個人用）"
 }

@@ -27,8 +27,8 @@ test("renders the Sakaguchi attendance metadata", async () => {
     /^text\/html\b/i,
   );
   const html = await response.text();
-  assert.match(html, /<title>坂口商会総合管理システム<\/title>/i);
-  assert.match(html, /<meta property="og:title" content="坂口商会総合管理システム"\/>/i);
+  assert.match(html, /<title>坂口商会勤怠管理アプリ（個人用）<\/title>/i);
+  assert.match(html, /<meta property="og:title" content="坂口商会勤怠管理アプリ（個人用）"\/>/i);
   assert.match(html, /<meta property="og:image" content="https:\/\/sakaguchi-management-system\.nenoi-shogo\.workers\.dev\/og\.png"\/>/i);
   assert.match(html, /<link rel="apple-touch-icon" href="https:\/\/sakaguchi-management-system\.nenoi-shogo\.workers\.dev\/sakaguchi-icon\.png"\/>/i);
 });
