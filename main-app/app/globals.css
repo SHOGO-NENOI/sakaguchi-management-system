@@ -5348,7 +5348,7 @@ html body :is(input, textarea, select) {
   background-color: var(--input);
   border-color: var(--line);
 }
-html body :is(input, textarea)::placeholder { color: var(--muted); opacity: 1; }
+html body :is(input, textarea)::placeholder { color: var(--muted); opacity: 0.55; }
 html body :is(.trip-options button, .dinner-options button,
   .work-options button, .personnel-options button):not(.selected) {
   color: var(--text);
@@ -5409,7 +5409,7 @@ html body :is(
 html body :is(input, textarea)::placeholder {
   color: var(--muted) !important;
   -webkit-text-fill-color: var(--muted) !important;
-  opacity: 1;
+  opacity: 0.55 !important;
 }
 html body select option {
   color: var(--text);
