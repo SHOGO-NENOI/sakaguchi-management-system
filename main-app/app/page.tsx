@@ -229,6 +229,9 @@ export default function Home() {
     "default" | "granted" | "denied" | "unsupported"
   >("default");
   const [activeTab, setActiveTab] = useState<AppTab>("entry");
+  const [entryIntent, setEntryIntent] = useState<"plan" | "record" | null>(
+    null,
+  );
   useEffect(() => {
     setSelectedPlanIds([]);
   }, [currentDate, month, activeTab]);
@@ -1565,6 +1568,7 @@ export default function Home() {
         setForm(emptyEntry());
         setOffEndDate(today());
         setEditingId(null);
+        setEntryIntent(null);
       }
       setSaving(false);
       return;
@@ -1612,6 +1616,7 @@ export default function Home() {
       setForm(emptyEntry());
       setOffEndDate(today());
       setEditingId(null);
+      setEntryIntent(null);
       if (data.warning || siteWarning)
         setError(
           `勤務記録は保存しました。${[data.warning, siteWarning].filter(Boolean).join(" ")}`,
@@ -2602,6 +2607,7 @@ export default function Home() {
     setForm(values);
     setOffEndDate(entry.date);
     setEditingId(id);
+    setEntryIntent(null);
     setActiveTab("entry");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -2615,6 +2621,7 @@ export default function Home() {
     setEditingId(null);
     setForm(emptyEntry());
     setOffEndDate(today());
+    setEntryIntent(null);
   }
 
   function toggleWork(index: number, value: string) {
@@ -3446,6 +3453,7 @@ export default function Home() {
           <EntryTab
             editingId={editingId}
             formIsPlanned={formIsPlanned}
+            entryIntent={entryIntent}
             cancelEdit={cancelEdit}
             form={form}
             setForm={setForm}
@@ -3626,6 +3634,7 @@ export default function Home() {
           <HistoryPlansTab
             activeTab={activeTab}
             setActiveTab={setActiveTab}
+            setEntryIntent={setEntryIntent}
             historyView={historyView}
             setHistoryView={setHistoryView}
             month={month}

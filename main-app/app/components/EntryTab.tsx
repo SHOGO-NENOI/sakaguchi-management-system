@@ -14,6 +14,7 @@ import type { Entry, WorkType } from "@/app/types";
 type EntryTabProps = {
   editingId: string | null;
   formIsPlanned: boolean;
+  entryIntent: "plan" | "record" | null;
   cancelEdit: () => void;
   form: Omit<Entry, "id">;
   setForm: (value: Omit<Entry, "id">) => void;
@@ -64,6 +65,7 @@ type EntryTabProps = {
 export default function EntryTab({
   editingId,
   formIsPlanned,
+  entryIntent,
   cancelEdit,
   form,
   setForm,
@@ -121,9 +123,13 @@ export default function EntryTab({
                 ? formIsPlanned
                   ? "勤務予定を編集"
                   : "勤務記録を編集"
-                : formIsPlanned
-                  ? "これからの勤務予定"
-                  : "今日の勤務を記録"}
+                : entryIntent === "plan"
+                  ? "予定を入力"
+                  : entryIntent === "record"
+                    ? "勤務を記録"
+                    : formIsPlanned
+                      ? "これからの勤務予定"
+                      : "今日の勤務を記録"}
             </h1>
             <time dateTime={today()}>{fullDateLabel(today())}</time>
           </div>

@@ -21,6 +21,7 @@ type CalendarDay = { day: number; date: string; entries: Entry[] } | null;
 type HistoryPlansTabProps = {
   activeTab: AppTab;
   setActiveTab: (tab: AppTab) => void;
+  setEntryIntent: (intent: "plan" | "record" | null) => void;
   historyView: "list" | "calendar";
   setHistoryView: (value: "list" | "calendar") => void;
   month: string;
@@ -45,6 +46,7 @@ type HistoryPlansTabProps = {
 export default function HistoryPlansTab({
   activeTab,
   setActiveTab,
+  setEntryIntent,
   historyView,
   setHistoryView,
   month,
@@ -79,7 +81,14 @@ export default function HistoryPlansTab({
             {activeTab === "history" && <time dateTime={today()}>{fullDateLabel(today())}</time>}
           </div>
         </div>
-        <button type="button" className="plan-add-button" onClick={() => setActiveTab("entry")}>
+        <button
+          type="button"
+          className="plan-add-button"
+          onClick={() => {
+            setEntryIntent(activeTab === "plans" ? "plan" : "record");
+            setActiveTab("entry");
+          }}
+        >
           {activeTab === "plans" ? "＋ 予定を入力" : "＋ 記録を入力"}
         </button>
       </div>
