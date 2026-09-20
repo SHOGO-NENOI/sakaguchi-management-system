@@ -1585,6 +1585,72 @@ textarea {
   font-size: 9px;
   line-height: 1.55;
 }
+.custom-allowances {
+  grid-column: 1/-1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.custom-allowances-label {
+  font-size: 9px;
+  color: #64736e;
+}
+.custom-allowances-label em {
+  margin-left: 4px;
+  color: #94a09b;
+  font-style: normal;
+}
+.custom-allowance-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+}
+.custom-allowance-row input[type="text"] {
+  flex: 1 1 100%;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 11px;
+}
+.custom-allowance-row .pay-input-wrap {
+  flex: 1 1 90px;
+}
+.custom-allowance-row select {
+  flex: 1 1 90px;
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font-size: 10px;
+}
+.custom-allowance-row button.danger {
+  flex: none;
+  padding: 8px 10px;
+  border: 1px solid #e3b8bc;
+  border-radius: 8px;
+  color: #9f3941;
+  background: #fdf1f2;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.add-custom-allowance {
+  align-self: flex-start;
+  padding: 8px 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  color: var(--green);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 700;
+}
 .self-dinner-details {
   margin-top: 12px;
   border: 1px solid #eadbc8;

@@ -36,11 +36,19 @@ export type GoogleConnection = {
   clientId: string;
   spreadsheetUrl: string;
 };
+export type AllowancePeriod = "day" | "month";
+export type CustomAllowance = {
+  id: string;
+  name: string;
+  amount: string;
+  period: AllowancePeriod;
+};
 export type PaySettings = {
   dailyRate: string;
   standardHours: string;
   overtimeMultiplier: string;
   tripAllowance: string;
+  customAllowances: CustomAllowance[];
 };
 export type SiteCardData = {
   masterId?: number;

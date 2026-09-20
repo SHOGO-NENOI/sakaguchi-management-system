@@ -1,4 +1,4 @@
-import type { Entry, PaySettings, SummaryPeriod } from "@/app/types";
+import type { CustomAllowance, Entry, PaySettings, SummaryPeriod } from "@/app/types";
 
 type HolidayRange = { start: string; end: string; label: string };
 
@@ -36,10 +36,17 @@ type SummaryTabProps = {
     extra: number;
     weeklyExtra: number;
     tripAllowance: number;
+    customAllowances: { id: string; name: string; amount: number }[];
     total: number;
   } | null;
   paySettings: PaySettings;
   updatePaySettings: (value: PaySettings) => void;
+  addCustomAllowance: () => void;
+  updateCustomAllowance: (
+    id: string,
+    patch: Partial<Omit<CustomAllowance, "id">>,
+  ) => void;
+  removeCustomAllowance: (id: string) => void;
   plannedMonthEntries: Entry[];
   selfDinnerEntries: Entry[];
   formatDate: (value: string) => string;
@@ -75,6 +82,9 @@ export default function SummaryTab({
   estimatedPay,
   paySettings,
   updatePaySettings,
+  addCustomAllowance,
+  updateCustomAllowance,
+  removeCustomAllowance,
   plannedMonthEntries,
   selfDinnerEntries,
   formatDate,
@@ -325,6 +335,11 @@ export default function SummaryTab({
                 出張手当 ¥{estimatedPay.tripAllowance.toLocaleString("ja-JP")}
               </span>
             )}
+            {estimatedPay.customAllowances.map((allowance) => (
+              <span key={allowance.id}>
+                {allowance.name} ¥{allowance.amount.toLocaleString("ja-JP")}
+              </span>
+            ))}
           </div>
         )}
         <details className="pay-settings">
@@ -409,8 +424,69 @@ export default function SummaryTab({
                 />
               </div>
             </label>
+            <div className="custom-allowances">
+              <span className="custom-allowances-label">
+                その他の手当 <em>任意・役職手当など自由に追加できます</em>
+              </span>
+              {paySettings.customAllowances.map((allowance) => (
+                <div className="custom-allowance-row" key={allowance.id}>
+                  <input
+                    type="text"
+                    placeholder="例：役職手当"
+                    value={allowance.name}
+                    onChange={(e) =>
+                      updateCustomAllowance(allowance.id, {
+                        name: e.target.value,
+                      })
+                    }
+                  />
+                  <div className="pay-input-wrap">
+                    <b>¥</b>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      step="100"
+                      placeholder="例：5000"
+                      value={allowance.amount}
+                      onChange={(e) =>
+                        updateCustomAllowance(allowance.id, {
+                          amount: e.target.value,
+                        })
+                      }
+                    />
+                  </div>
+                  <select
+                    value={allowance.period}
+                    onChange={(e) =>
+                      updateCustomAllowance(allowance.id, {
+                        period: e.target.value as "day" | "month",
+                      })
+                    }
+                  >
+                    <option value="day">1日あたり</option>
+                    <option value="month">1ヶ月あたり</option>
+                  </select>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => removeCustomAllowance(allowance.id)}
+                    aria-label={`${allowance.name || "手当"}を削除`}
+                  >
+                    削除
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="add-custom-allowance"
+                onClick={addCustomAllowance}
+              >
+                ＋ 手当を追加
+              </button>
+            </div>
             <p>
-              計算：日給×勤務日数（半日は0.5日）＋早出・残業時間×日給換算の時間単価×倍率＋週40時間を超えた分×日給換算の時間単価×倍率＋出張日数×出張手当。税金・保険などは含まない概算です。
+              計算：日給×勤務日数（半日は0.5日）＋早出・残業時間×日給換算の時間単価×倍率＋週40時間を超えた分×日給換算の時間単価×倍率＋出張日数×出張手当＋その他の手当。税金・保険などは含まない概算です。
             </p>
           </div>
         </details>

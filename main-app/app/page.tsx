@@ -52,6 +52,7 @@ import type {
   CalendarSettings,
   GoogleConnection,
   PaySettings,
+  CustomAllowance,
   SiteCardData,
   SiteMaster,
   MasterOption,
@@ -76,6 +77,7 @@ const defaultPaySettings: PaySettings = {
   standardHours: "8",
   overtimeMultiplier: "1.25",
   tripAllowance: "1500",
+  customAllowances: [],
 };
 
 const workTypes: WorkType[] = ["1日", "半日", "休み"];
@@ -866,6 +868,14 @@ export default function Home() {
     });
     return total;
   }, [summaryEntries]);
+  const workedMonthCount = useMemo(() => {
+    const months = new Set(
+      summaryEntries
+        .filter((entry) => ["1日", "半日"].includes(entry.type))
+        .map((entry) => entry.date.slice(0, 7)),
+    );
+    return months.size;
+  }, [summaryEntries]);
   const estimatedPay = useMemo(() => {
     const dailyRate = Number(paySettings.dailyRate);
     const standardHours = Number(paySettings.standardHours);
@@ -883,12 +893,28 @@ export default function Home() {
     const tripAllowance = Math.round(
       summary.trips * (tripAllowancePerDay || 0),
     );
+    const customAllowances = paySettings.customAllowances
+      .filter((allowance) => allowance.name.trim() && Number(allowance.amount))
+      .map((allowance) => ({
+        id: allowance.id,
+        name: allowance.name,
+        amount: Math.round(
+          Number(allowance.amount) *
+            (allowance.period === "day" ? summary.days : workedMonthCount),
+        ),
+      }));
+    const customAllowanceTotal = customAllowances.reduce(
+      (sum, allowance) => sum + allowance.amount,
+      0,
+    );
     return {
       base,
       extra: dailyExtra,
       weeklyExtra,
       tripAllowance,
-      total: base + dailyExtra + weeklyExtra + tripAllowance,
+      customAllowances,
+      total:
+        base + dailyExtra + weeklyExtra + tripAllowance + customAllowanceTotal,
     };
   }, [
     paySettings,
@@ -897,6 +923,7 @@ export default function Home() {
     summary.overtime,
     summary.trips,
     weeklyOvertimeMinutes,
+    workedMonthCount,
   ]);
   const selfDinnerEntries = useMemo(
     () =>
@@ -2075,6 +2102,42 @@ export default function Home() {
     } catch {
       /* 設定変更自体は続ける */
     }
+  }
+
+  function addCustomAllowance() {
+    updatePaySettings({
+      ...paySettings,
+      customAllowances: [
+        ...paySettings.customAllowances,
+        {
+          id: crypto.randomUUID(),
+          name: "",
+          amount: "",
+          period: "day",
+        },
+      ],
+    });
+  }
+
+  function updateCustomAllowance(
+    id: string,
+    patch: Partial<Omit<CustomAllowance, "id">>,
+  ) {
+    updatePaySettings({
+      ...paySettings,
+      customAllowances: paySettings.customAllowances.map((allowance) =>
+        allowance.id === id ? { ...allowance, ...patch } : allowance,
+      ),
+    });
+  }
+
+  function removeCustomAllowance(id: string) {
+    updatePaySettings({
+      ...paySettings,
+      customAllowances: paySettings.customAllowances.filter(
+        (allowance) => allowance.id !== id,
+      ),
+    });
   }
 
   function clearShiftBoardDone() {
@@ -3528,6 +3591,9 @@ export default function Home() {
             estimatedPay={estimatedPay}
             paySettings={paySettings}
             updatePaySettings={updatePaySettings}
+            addCustomAllowance={addCustomAllowance}
+            updateCustomAllowance={updateCustomAllowance}
+            removeCustomAllowance={removeCustomAllowance}
             plannedMonthEntries={plannedMonthEntries}
             selfDinnerEntries={selfDinnerEntries}
             formatDate={formatDate}
