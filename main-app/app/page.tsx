@@ -3334,14 +3334,10 @@ export default function Home() {
         <nav className="app-tabs" aria-label="画面の切り替え">
           {(
             [
-              ["entry", "＋", "入力"],
-              ["history", "◷", "勤務記録"],
               ["plans", "▣", "予定"],
+              ["history", "◷", "記録"],
+              ["sites", "⌂", "現場"],
               ["summary", "▥", "集計"],
-              ["sites", "⌂", "現場一覧"],
-              ["tools", "✓", "道具チェック"],
-              ["shiftboard", "▤", "シフトボード"],
-              ["settings", "⚙", "設定"],
             ] as [AppTab, string, string][]
           ).map(([tab, icon, label]) => (
             <button
@@ -3356,15 +3352,14 @@ export default function Home() {
             </button>
           ))}
           <div className="app-more">
-            <button type="button" className={["summary", "tools", "shiftboard", "settings"].includes(activeTab) ? "active" : ""} aria-expanded={moreOpen} aria-controls="app-more-options" onClick={() => setMoreOpen((open) => !open)}>
+            <button type="button" className={["tools", "shiftboard", "settings"].includes(activeTab) ? "active" : ""} aria-expanded={moreOpen} aria-controls="app-more-options" onClick={() => setMoreOpen((open) => !open)}>
               <span aria-hidden="true">☰</span>その他
             </button>
             {moreOpen && (
               <div className="app-more-options" id="app-more-options">
                 {([
-                  ["summary", "▥", "集計"],
-                  ["tools", "✓", "道具チェック"],
                   ["shiftboard", "▤", "シフトボード"],
+                  ["tools", "✓", "道具チェック"],
                   ["settings", "⚙", "設定"],
                 ] as [AppTab, string, string][]).map(([tab, icon, label]) => (
                   <button type="button" key={tab} onClick={() => { setActiveTab(tab); setMoreOpen(false); }}>

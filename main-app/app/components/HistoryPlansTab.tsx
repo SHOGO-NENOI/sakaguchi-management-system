@@ -79,9 +79,9 @@ export default function HistoryPlansTab({
             {activeTab === "history" && <time dateTime={today()}>{fullDateLabel(today())}</time>}
           </div>
         </div>
-        {activeTab === "plans" && (
-          <button type="button" className="plan-add-button" onClick={() => setActiveTab("entry")}>＋ 予定を入力</button>
-        )}
+        <button type="button" className="plan-add-button" onClick={() => setActiveTab("entry")}>
+          {activeTab === "plans" ? "＋ 予定を入力" : "＋ 記録を入力"}
+        </button>
       </div>
       <div className="plan-view-row">
         <div className="history-tools">
@@ -161,7 +161,7 @@ export default function HistoryPlansTab({
         <div className="empty">
           <span>記</span>
           <h3>この月の勤務記録はありません</h3>
-          <p>入力タブから勤務内容を登録すると、ここに表示されます。</p>
+          <p>「＋ 記録を入力」から勤務内容を登録すると、ここに表示されます。</p>
         </div>
       ) : historyView === "calendar" ? (
         <div className="calendar-wrap">

@@ -271,10 +271,16 @@ button {
   box-shadow: 0 8px 24px rgba(27, 55, 46, 0.08);
   backdrop-filter: blur(12px);
   overflow-x: auto;
-  position: sticky;
-  top: 8px;
-  z-index: 20;
+  position: fixed;
+  left: 8px;
+  right: 8px;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  top: auto;
+  z-index: 100;
   scrollbar-width: none;
+}
+body {
+  padding-bottom: calc(86px + env(safe-area-inset-bottom));
 }
 .app-tabs::-webkit-scrollbar {
   display: none;
@@ -4841,7 +4847,7 @@ body {
 .shell { width: min(1180px, calc(100% - 36px)); margin: 16px auto 60px; }
 .app-tabs {
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
   margin: 0 0 24px;
   padding: 6px;
@@ -4986,7 +4992,19 @@ html body .brand small { color: var(--green); font-weight: 750; }
 html body .today { color: var(--muted); }
 html body .app-tabs { box-shadow: 0 2px 12px #143e2c18; }
 html body .app-tabs button.active { color: #fff; }
-.app-more { display: none; }
+.app-more { display: block; position: relative; }
+.app-more > button { width: 100%; }
+.app-more-options {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 13px);
+  width: min(240px, 80vw);
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+  box-shadow: 0 8px 25px #223a3538;
+}
 html body .history-section {
   background: var(--paper);
   box-shadow: none;
@@ -5126,22 +5144,7 @@ html body .history-list .history-item:has(.plan-select) .actions { grid-column: 
     background: var(--topbar);
     box-shadow: 0 2px 17px #223a3540;
   }
-  html body .app-tabs > button:nth-child(4),
-  html body .app-tabs > button:nth-child(n+6) { display: none; }
   html body .app-tabs button { min-height: 56px; font-size: 0.7rem; }
-  .app-more { display: block; position: relative; }
-  .app-more > button { width: 100%; }
-  .app-more-options {
-    position: absolute;
-    right: 0;
-    bottom: calc(100% + 13px);
-    width: min(240px, 80vw);
-    padding: 6px;
-    border: 1px solid var(--line);
-    border-radius: 13px;
-    background: var(--paper);
-    box-shadow: 0 8px 25px #223a3538;
-  }
   html body .app-tabs .app-more-options button {
     display: flex;
     align-items: center;
