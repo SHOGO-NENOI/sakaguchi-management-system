@@ -100,6 +100,11 @@ npm run typecheck
 - プロジェクトはOneDrive配下を避け、通常のローカルフォルダーに置くとファイル監視が安定します。
 - Windowsでも `npm ci`、`npm run dev`、`npm test`、`npm run lint`、`npm run typecheck` をそのまま実行できます。
 - Windows固有の生成ファイルや改行差分がGitに混ざらないよう、`.gitattributes`で改行を統一しています。
+- Windowsでは`main-app/scripts/*.sh`の実行権限（755）が変更されたと誤検知され、`git status`に無関係な差分が出ることがあります。その場合はリポジトリ直下で次を実行してください（このPC限定の設定で、コミットや他の環境には影響しません）。
+
+  ```bash
+  git config core.filemode false
+  ```
 
 Windowsでの一括確認も `main-app` で次を実行します。
 
