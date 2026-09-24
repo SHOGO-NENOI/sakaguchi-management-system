@@ -31,4 +31,13 @@ test("renders the Sakaguchi attendance metadata", async () => {
   assert.match(html, /<meta property="og:title" content="坂口商会勤怠管理アプリ（個人用）"\/>/i);
   assert.match(html, /<meta property="og:image" content="https:\/\/sakaguchi-management-system\.nenoi-shogo\.workers\.dev\/og\.png"\/>/i);
   assert.match(html, /<link rel="apple-touch-icon" href="https:\/\/sakaguchi-management-system\.nenoi-shogo\.workers\.dev\/sakaguchi-icon\.png"\/>/i);
+  assert.match(
+    html,
+    /aria-label="管理メニュー"[\s\S]*?>設定<\/button>[\s\S]*?>シフトボード<\/button>[\s\S]*?>道具チェック<\/button>/i,
+  );
+  assert.match(
+    html,
+    /aria-label="メインメニュー"[\s\S]*?>入力<\/button>[\s\S]*?>予定<\/button>[\s\S]*?>記録<\/button>[\s\S]*?>現場<\/button>[\s\S]*?>集計<\/button>/i,
+  );
+  assert.doesNotMatch(html, /class="app-more"/i);
 });

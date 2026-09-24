@@ -69,8 +69,8 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 
-const APP_VERSION = "2.2.27";
-const APP_UPDATED_AT = "2026年9月20日";
+const APP_VERSION = "2.2.28";
+const APP_UPDATED_AT = "2026年9月24日";
 const CURRENT_USER_NAME = "子野井";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -195,7 +195,6 @@ export default function Home() {
   const [month, setMonth] = useState(today().slice(0, 7));
   const [summaryPeriod, setSummaryPeriod] = useState<SummaryPeriod>("monthly");
   const [historyView, setHistoryView] = useState<"list" | "calendar">("list");
-  const [moreOpen, setMoreOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -3430,10 +3429,32 @@ export default function Home() {
         </div>
       </header>
 
+      <nav className="management-tabs" aria-label="管理メニュー">
+        {(
+          [
+            ["settings", "⚙", "設定"],
+            ["shiftboard", "▤", "シフトボード"],
+            ["tools", "✓", "道具チェック"],
+          ] as [AppTab, string, string][]
+        ).map(([tab, icon, label]) => (
+          <button
+            key={tab}
+            type="button"
+            className={activeTab === tab ? "active" : ""}
+            aria-current={activeTab === tab ? "page" : undefined}
+            onClick={() => setActiveTab(tab)}
+          >
+            <span aria-hidden="true">{icon}</span>
+            {label}
+          </button>
+        ))}
+      </nav>
+
       <div className="shell">
-        <nav className="app-tabs" aria-label="画面の切り替え">
+        <nav className="app-tabs" aria-label="メインメニュー">
           {(
             [
+              ["entry", "+", "入力"],
               ["plans", "▣", "予定"],
               ["history", "◷", "記録"],
               ["sites", "⌂", "現場"],
@@ -3451,24 +3472,6 @@ export default function Home() {
               {label}
             </button>
           ))}
-          <div className="app-more">
-            <button type="button" className={["tools", "shiftboard", "settings"].includes(activeTab) ? "active" : ""} aria-expanded={moreOpen} aria-controls="app-more-options" onClick={() => setMoreOpen((open) => !open)}>
-              <span aria-hidden="true">☰</span>その他
-            </button>
-            {moreOpen && (
-              <div className="app-more-options" id="app-more-options">
-                {([
-                  ["shiftboard", "▤", "シフトボード"],
-                  ["tools", "✓", "道具チェック"],
-                  ["settings", "⚙", "設定"],
-                ] as [AppTab, string, string][]).map(([tab, icon, label]) => (
-                  <button type="button" key={tab} onClick={() => { setActiveTab(tab); setMoreOpen(false); }}>
-                    <span aria-hidden="true">{icon}</span>{label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </nav>
         {activeTab === "settings" && (
           <SettingsTab

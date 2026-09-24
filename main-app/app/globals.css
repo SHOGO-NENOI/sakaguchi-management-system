@@ -260,6 +260,35 @@ button {
   width: min(1120px, calc(100% - 32px));
   margin: 34px auto 60px;
 }
+.management-tabs {
+  width: min(1120px, calc(100% - 32px));
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin: 12px auto 0;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--topbar);
+  box-shadow: 0 4px 16px rgba(27, 55, 46, 0.08);
+  backdrop-filter: blur(12px);
+}
+.management-tabs button {
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 800;
+}
+.management-tabs button > span { margin-right: 6px; }
+.management-tabs button.active {
+  color: #fff;
+  background: var(--green);
+}
 .app-tabs {
   display: flex;
   gap: 5px;
@@ -5058,19 +5087,6 @@ html body .brand small { color: var(--green); font-weight: 750; }
 html body .today { color: var(--muted); }
 html body .app-tabs { box-shadow: 0 2px 12px #143e2c18; }
 html body .app-tabs button.active { color: #fff; }
-.app-more { display: block; position: relative; }
-.app-more > button { width: 100%; }
-.app-more-options {
-  position: absolute;
-  right: 0;
-  bottom: calc(100% + 13px);
-  width: min(240px, 80vw);
-  padding: 6px;
-  border: 1px solid var(--line);
-  border-radius: 13px;
-  background: var(--paper);
-  box-shadow: 0 8px 25px #223a3538;
-}
 html body .history-section {
   background: var(--paper);
   box-shadow: none;
@@ -5211,13 +5227,20 @@ html body .history-list .history-item:has(.plan-select) .actions { grid-column: 
     box-shadow: 0 2px 17px #223a3540;
   }
   html body .app-tabs button { min-height: 56px; font-size: 0.7rem; }
-  html body .app-tabs .app-more-options button {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    min-height: 44px;
-    text-align: left;
-    color: var(--ink);
+  html body .management-tabs {
+    width: calc(100% - 20px);
+    margin-top: 8px;
+    gap: 3px;
+    padding: 4px;
+  }
+  html body .management-tabs button {
+    min-height: 42px;
+    padding: 6px 3px;
+    font-size: 0.68rem;
+  }
+  html body .management-tabs button > span {
+    display: block;
+    margin: 0 0 2px;
   }
   html body .history-section { padding: 12px 3px; border: 0; }
   html body .history-list .history-day { grid-template-columns: 43px minmax(0, 1fr); gap: 7px; padding: 9px 8px 9px 6px; }
