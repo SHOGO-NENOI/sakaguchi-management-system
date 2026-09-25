@@ -21,6 +21,7 @@ export type Entry = {
   syncError: string;
   lastSyncedAt: string;
   lastModifiedSource: string;
+  updatedAt: string;
 };
 
 export type CalendarSettings = {
@@ -52,6 +53,7 @@ export type PaySettings = {
 };
 export type SiteCardData = {
   masterId?: number;
+  updatedAt?: string;
   site: string;
   location: string;
   address: string;
@@ -80,6 +82,7 @@ export type MasterOption = {
   name: string;
   sortOrder: number;
   archivedAt: string;
+  updatedAt: string;
 };
 export type RegionInfo = { prefecture: string; municipality: string };
 export type ToolCategory = "通常業務" | "出張";

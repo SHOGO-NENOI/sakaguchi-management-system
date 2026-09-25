@@ -55,7 +55,6 @@ type SitesTabProps = {
   loadSiteDocuments: (siteKey: string, force?: boolean) => void;
   openSiteNameEditor: (card: SiteCardData) => void;
   openSiteLocationEditor: (card: SiteCardData) => void;
-  archiveSite: (card: SiteCardData) => void;
   siteNameDraft: string;
   setSiteNameDraft: (value: string) => void;
   saveSiteName: (card: SiteCardData) => void;
@@ -108,7 +107,6 @@ export default function SitesTab({
   loadSiteDocuments,
   openSiteNameEditor,
   openSiteLocationEditor,
-  archiveSite,
   siteNameDraft,
   setSiteNameDraft,
   saveSiteName,
@@ -602,15 +600,6 @@ export default function SitesTab({
                                   >
                                     {editing ? "閉じる" : "編集"}
                                   </button>
-                                  {card.masterId && (
-                                    <button
-                                      className="danger"
-                                      type="button"
-                                      onClick={() => archiveSite(card)}
-                                    >
-                                      非表示
-                                    </button>
-                                  )}
                                 </div>
                                 {editing && (
                                 <div className="site-card-expanded">

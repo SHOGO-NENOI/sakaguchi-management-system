@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from "react";
 import { formatDate } from "@/app/lib/entry-helpers";
+import OperationsPanel from "@/app/components/OperationsPanel";
 import type {
   FontSize,
   GoogleConnection,
@@ -384,6 +385,7 @@ export default function SettingsTab({
           )}
         </section>
       )}
+      <OperationsPanel />
       <section className="settings-skin-card">
         <div>
           <span className="eyebrow">APPEARANCE</span>

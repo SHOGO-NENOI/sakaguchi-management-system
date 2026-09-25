@@ -1,14 +1,16 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { siteDocuments } from "../../../../db/schema";
 import { googleFetch } from "../../../lib/google-api";
+import { ensureOperationalSchema } from "../../../lib/operational-schema";
 
 export async function GET(request: Request) {
   try {
+    await ensureOperationalSchema();
     const id = Number(new URL(request.url).searchParams.get("id"));
     if (!Number.isInteger(id) || id <= 0) return new Response("資料が見つかりません", { status: 400 });
     const db = await getDb();
-    const [document] = await db.select().from(siteDocuments).where(eq(siteDocuments.id, id)).limit(1);
+    const [document] = await db.select().from(siteDocuments).where(and(eq(siteDocuments.id, id), eq(siteDocuments.archivedAt, ""))).limit(1);
     if (!document) return new Response("資料が見つかりません", { status: 404 });
     const encodedName = encodeURIComponent(document.fileName).replace(/'/g, "%27");
     if (document.objectKey.startsWith("google:")) {

@@ -1,6 +1,8 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import { createDailyBackup } from "../app/lib/backup";
+import { appendAudit } from "../app/lib/audit";
 
 interface Env {
   ASSETS: Fetcher;
@@ -41,6 +43,16 @@ const worker = {
     }
 
     return handler.fetch(request, env, ctx);
+  },
+  async scheduled(): Promise<void> {
+    try {
+      const result = await createDailyBackup(false);
+      if (result.created) {
+        await appendAudit({ action: "backup", targetType: "backup", targetName: String(result.file.name ?? "自動バックアップ") });
+      }
+    } catch (error) {
+      console.error("daily_backup_failed", error instanceof Error ? error.message : String(error));
+    }
   },
 };
 

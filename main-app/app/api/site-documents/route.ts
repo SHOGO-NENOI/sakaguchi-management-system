@@ -1,7 +1,9 @@
-import { asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { siteDocuments } from "../../../db/schema";
 import { ensureDriveFolder, googleFetch } from "../../lib/google-api";
+import { appendAudit } from "../../lib/audit";
+import { ensureOperationalSchema } from "../../lib/operational-schema";
 
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
@@ -9,20 +11,16 @@ function validSiteKey(value: unknown) {
   return typeof value === "string" && value.trim().length > 0 && value.length <= 500 ? value.trim() : null;
 }
 
-async function getBucket() {
-  const { env } = await import("cloudflare:workers");
-  if (!env.BUCKET) throw new Error("ファイル保存領域を利用できません");
-  return env.BUCKET;
-}
-
 export async function GET(request: Request) {
   try {
+    await ensureOperationalSchema();
     const params = new URL(request.url).searchParams;
     const db = await getDb();
     if (params.get("counts") === "1") {
       const rows = await db
         .select({ siteKey: siteDocuments.siteKey, count: count() })
         .from(siteDocuments)
+        .where(eq(siteDocuments.archivedAt, ""))
         .groupBy(siteDocuments.siteKey);
       return Response.json({
         counts: Object.fromEntries(rows.map((row) => [row.siteKey, row.count])),
@@ -30,7 +28,7 @@ export async function GET(request: Request) {
     }
     const siteKey = validSiteKey(params.get("siteKey"));
     if (!siteKey) return Response.json({ error: "現場が見つかりません" }, { status: 400 });
-    const documents = await db.select({ id: siteDocuments.id, siteKey: siteDocuments.siteKey, fileName: siteDocuments.fileName, contentType: siteDocuments.contentType, size: siteDocuments.size, uploadedAt: siteDocuments.uploadedAt }).from(siteDocuments).where(eq(siteDocuments.siteKey, siteKey)).orderBy(asc(siteDocuments.uploadedAt), asc(siteDocuments.id));
+    const documents = await db.select({ id: siteDocuments.id, siteKey: siteDocuments.siteKey, fileName: siteDocuments.fileName, contentType: siteDocuments.contentType, size: siteDocuments.size, uploadedAt: siteDocuments.uploadedAt }).from(siteDocuments).where(and(eq(siteDocuments.siteKey, siteKey), eq(siteDocuments.archivedAt, ""))).orderBy(asc(siteDocuments.uploadedAt), asc(siteDocuments.id));
     return Response.json({ documents });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "資料を読み込めませんでした" }, { status: 500 });
@@ -39,6 +37,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await ensureOperationalSchema();
     const url = new URL(request.url);
     const siteKey = validSiteKey(url.searchParams.get("siteKey"));
     const fileName = (url.searchParams.get("fileName") || "名称未設定").trim().slice(0, 255);
@@ -68,6 +67,7 @@ export async function POST(request: Request) {
     const uploaded = await upload.json() as { id: string };
     try {
       const [document] = await db.insert(siteDocuments).values({ siteKey, fileName, objectKey: `google:${uploaded.id}`, contentType, size: bytes.byteLength, uploadedAt: new Date().toISOString() }).returning();
+      await appendAudit({ action: "create", targetType: "document", targetId: document.id, targetName: document.fileName, after: document });
       return Response.json({ document: { id: document.id, siteKey: document.siteKey, fileName: document.fileName, contentType: document.contentType, size: document.size, uploadedAt: document.uploadedAt } }, { status: 201 });
     } catch (error) {
       await googleFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(uploaded.id)}`, { method: "DELETE" });
@@ -97,14 +97,14 @@ export async function PATCH(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    await ensureOperationalSchema();
     const body = await request.json() as { id?: number };
     if (!body.id || !Number.isInteger(body.id)) throw new Error("削除する資料が見つかりません");
     const db = await getDb();
     const [document] = await db.select().from(siteDocuments).where(eq(siteDocuments.id, body.id)).limit(1);
     if (!document) throw new Error("資料が見つかりません");
-    if (document.objectKey.startsWith("google:")) await googleFetch(`https://www.googleapis.com/drive/v3/files/${encodeURIComponent(document.objectKey.slice(7))}`, { method: "DELETE" });
-    else { const bucket = await getBucket(); await bucket.delete(document.objectKey); }
-    await db.delete(siteDocuments).where(eq(siteDocuments.id, document.id));
+    await db.update(siteDocuments).set({ archivedAt: new Date().toISOString() }).where(eq(siteDocuments.id, document.id));
+    await appendAudit({ action: "archive", targetType: "document", targetId: document.id, targetName: document.fileName, before: document });
     return Response.json({ ok: true });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "資料を削除できませんでした" }, { status: 400 });

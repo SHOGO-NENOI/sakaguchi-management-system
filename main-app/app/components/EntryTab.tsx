@@ -1,5 +1,6 @@
-import type { FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import {
+  SITE_SEPARATOR,
   elapsedDays,
   formatDate,
   formatMinutes,
@@ -9,6 +10,13 @@ import {
   splitNames,
   today,
 } from "@/app/lib/entry-helpers";
+import {
+  nextAssistantQuestion,
+  parseAttendanceVoice,
+  voiceResultLines,
+  type AttendanceVoiceResult,
+  type VoiceSiteOption,
+} from "@/app/lib/attendance-voice";
 import type { Entry, WorkType } from "@/app/types";
 
 type EntryTabProps = {
@@ -60,6 +68,9 @@ type EntryTabProps = {
   knownHotels: string[];
   error: string;
   saving: boolean;
+  voiceSiteOptions: VoiceSiteOption[];
+  offlinePendingCount: number;
+  offlineMessage: string;
 };
 
 export default function EntryTab({
@@ -111,7 +122,83 @@ export default function EntryTab({
   knownHotels,
   error,
   saving,
+  voiceSiteOptions,
+  offlinePendingCount,
+  offlineMessage,
 }: EntryTabProps) {
+  const [voiceText, setVoiceText] = useState("");
+  const [voiceResult, setVoiceResult] = useState<AttendanceVoiceResult | null>(null);
+  const [voiceMessage, setVoiceMessage] = useState("");
+  const [voiceListening, setVoiceListening] = useState(false);
+
+  const parseVoice = (text: string) => {
+    const result = parseAttendanceVoice(text, voiceSiteOptions, knownPersonnelNames, knownWorkOptions);
+    setVoiceResult(result);
+    setVoiceMessage(nextAssistantQuestion(result));
+  };
+
+  const listen = () => {
+    type Recognition = {
+      lang: string;
+      interimResults: boolean;
+      continuous: boolean;
+      onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start(): void;
+    };
+    const speechWindow = window as typeof window & {
+      SpeechRecognition?: new () => Recognition;
+      webkitSpeechRecognition?: new () => Recognition;
+    };
+    const Constructor = speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition;
+    if (!Constructor) {
+      setVoiceMessage("このブラウザは音声入力に対応していません。文字で入力してください");
+      return;
+    }
+    const recognition = new Constructor();
+    recognition.lang = "ja-JP";
+    recognition.interimResults = false;
+    recognition.continuous = false;
+    recognition.onresult = (event) => {
+      const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
+      const combined = [voiceText, transcript].filter(Boolean).join("、");
+      setVoiceText(combined);
+      parseVoice(combined);
+    };
+    recognition.onerror = () => setVoiceMessage("音声を認識できませんでした。もう一度お試しください");
+    recognition.onend = () => setVoiceListening(false);
+    setVoiceListening(true);
+    recognition.start();
+  };
+
+  const replaceFirst = (value: string, next: string | undefined) => {
+    if (!next) return value;
+    const parts = value ? value.split(SITE_SEPARATOR) : [""];
+    parts[0] = next;
+    return parts.join(SITE_SEPARATOR);
+  };
+
+  const applyVoiceResult = () => {
+    if (!voiceResult) return;
+    const matched = voiceResult.site;
+    setForm({
+      ...form,
+      date: voiceResult.date ?? form.date,
+      type: voiceResult.type ?? form.type,
+      businessTrip: voiceResult.businessTrip ?? form.businessTrip,
+      site: replaceFirst(form.site, voiceResult.siteName ?? matched?.site),
+      location: replaceFirst(form.location, voiceResult.location ?? matched?.location),
+      address: replaceFirst(form.address, matched?.address),
+      coordinates: replaceFirst(form.coordinates, matched?.coordinates),
+      start: replaceFirst(form.start, voiceResult.start),
+      end: replaceFirst(form.end, voiceResult.end),
+      personnelNames: replaceFirst(form.personnelNames, voiceResult.personnelNames),
+      work: replaceFirst(form.work, voiceResult.work?.join("・")),
+    });
+    setVoiceMessage("フォームへ反映しました。内容を確認してから保存してください");
+  };
+
   return (
     <section className="entry-card">
       <div className="section-heading">
@@ -144,6 +231,41 @@ export default function EntryTab({
           </button>
         )}
       </div>
+
+      <details className="voice-assistant-panel">
+        <summary>🎙️ 音声アシスタント・まとめて音声入力</summary>
+        <div className="voice-assistant-content">
+          <p>例：「明日、鹿児島市、霧島太陽光発電所、8時から17時、子野井、草刈り、出張」</p>
+          <textarea
+            value={voiceText}
+            onChange={(event) => setVoiceText(event.target.value)}
+            placeholder="予定を話すか、文字でまとめて入力してください"
+          />
+          <div className="voice-assistant-actions">
+            <button type="button" onClick={listen} disabled={voiceListening}>
+              {voiceListening ? "聞き取り中…" : "🎤 音声で入力"}
+            </button>
+            <button type="button" onClick={() => parseVoice(voiceText)} disabled={!voiceText.trim()}>
+              内容を確認
+            </button>
+            <button type="button" className="primary" onClick={applyVoiceResult} disabled={!voiceResult}>
+              フォームへ反映
+            </button>
+          </div>
+          {voiceResult && (
+            <ul className="voice-result-list">
+              {voiceResultLines(voiceResult).map((line) => <li key={line}>{line}</li>)}
+            </ul>
+          )}
+          {voiceMessage && <p className="voice-assistant-message">{voiceMessage}</p>}
+        </div>
+      </details>
+      {(offlinePendingCount > 0 || offlineMessage) && (
+        <div className="offline-entry-status">
+          <strong>{offlinePendingCount > 0 ? `未送信の予定 ${offlinePendingCount}件` : "オフライン予定"}</strong>
+          {offlineMessage && <span>{offlineMessage}</span>}
+        </div>
+      )}
 
       <form onSubmit={submit}>
         <div

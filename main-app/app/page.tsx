@@ -46,6 +46,13 @@ import HistoryPlansTab from "@/app/components/HistoryPlansTab";
 import SitesTab from "@/app/components/SitesTab";
 import EntryTab from "@/app/components/EntryTab";
 import SettingsTab from "@/app/components/SettingsTab";
+import { compressPhoto } from "@/app/lib/image-compression";
+import { attendanceWarnings } from "@/app/lib/attendance-validation";
+import {
+  flushOfflineEntries,
+  offlineEntries,
+  queueOfflineEntry,
+} from "@/app/lib/offline-entries";
 import type {
   WorkType,
   Entry,
@@ -69,8 +76,8 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 
-const APP_VERSION = "2.2.28";
-const APP_UPDATED_AT = "2026年9月24日";
+const APP_VERSION = "2.3.0";
+const APP_UPDATED_AT = "2026年9月25日";
 const CURRENT_USER_NAME = "子野井";
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
@@ -197,6 +204,8 @@ export default function Home() {
   const [historyView, setHistoryView] = useState<"list" | "calendar">("list");
   const [ready, setReady] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [offlinePendingCount, setOfflinePendingCount] = useState(0);
+  const [offlineMessage, setOfflineMessage] = useState("");
   const [error, setError] = useState("");
   const [calendarSettings, setCalendarSettings] = useState<CalendarSettings>({
     webhookUrl: "",
@@ -339,6 +348,36 @@ export default function Home() {
     } catch {
       setFixedWorkOrder(FIXED_WORK_OPTIONS);
     }
+  }, []);
+
+  useEffect(() => {
+    const refreshCount = () => setOfflinePendingCount(offlineEntries().length);
+    const flush = async () => {
+      if (!navigator.onLine || !offlineEntries().length) {
+        refreshCount();
+        return;
+      }
+      setOfflineMessage("一時保存した予定を送信しています…");
+      const result = await flushOfflineEntries();
+      refreshCount();
+      if (!result.remaining) {
+        setOfflineMessage("一時保存した予定を送信しました");
+        const response = await fetch("/api/entries");
+        if (response.ok) {
+          const data = await response.json() as { entries: Entry[] };
+          setEntries(data.entries);
+        }
+      } else setOfflineMessage(`${result.remaining}件はまだ送信できていません`);
+    };
+    refreshCount();
+    const changed = () => refreshCount();
+    window.addEventListener("online", flush);
+    window.addEventListener("attendance-offline-queue-changed", changed);
+    void flush();
+    return () => {
+      window.removeEventListener("online", flush);
+      window.removeEventListener("attendance-offline-queue-changed", changed);
+    };
   }, []);
 
   useEffect(() => {
@@ -988,6 +1027,7 @@ export default function Home() {
       .forEach((master) => {
         const card: SiteCardData = {
           masterId: master.id,
+          updatedAt: master.updatedAt,
           site: master.site,
           location: master.location,
           address: master.address,
@@ -1430,6 +1470,18 @@ export default function Home() {
       ).sort((a, b) => a.localeCompare(b, "ja")),
     [entries],
   );
+  const voiceSiteOptions = useMemo(
+    () =>
+      siteMasters
+        .filter((site) => !site.archivedAt)
+        .map((site) => ({
+          site: site.site,
+          location: site.location,
+          address: site.address,
+          coordinates: site.coordinates,
+        })),
+    [siteMasters],
+  );
   const previousSiteVisits = useMemo(() => {
     const sites = form.site ? form.site.split(SITE_SEPARATOR) : [];
     const locations = form.location ? form.location.split(SITE_SEPARATOR) : [];
@@ -1611,17 +1663,48 @@ export default function Home() {
       setError("各現場の終了時刻は開始時刻より後に設定してください");
       return;
     }
+    const warnings = attendanceWarnings(form, entries, editingId);
+    if (
+      warnings.length &&
+      !window.confirm(
+        `入力内容を確認してください。\n\n・${warnings.join("\n・")}\n\nこのまま保存しますか？`,
+      )
+    )
+      return;
+    const payload = {
+      ...form,
+      id: editingId ? Number(editingId) : undefined,
+      expectedUpdatedAt: editingId ? form.updatedAt : undefined,
+    };
+    if (!editingId && formIsPlanned && !navigator.onLine) {
+      queueOfflineEntry(payload);
+      setForm(emptyEntry());
+      setOffEndDate(today());
+      setEntryIntent(null);
+      setOfflineMessage("予定をこの端末へ一時保存しました。通信が戻ると自動送信します");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
-      const response = await fetch("/api/entries", {
-        method: editingId ? "PUT" : "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          id: editingId ? Number(editingId) : undefined,
-        }),
-      });
+      let response: Response;
+      try {
+        response = await fetch("/api/entries", {
+          method: editingId ? "PUT" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch (networkError) {
+        if (!editingId && formIsPlanned) {
+          queueOfflineEntry(payload);
+          setForm(emptyEntry());
+          setOffEndDate(today());
+          setEntryIntent(null);
+          setOfflineMessage("通信できないため、予定をこの端末へ一時保存しました");
+          return;
+        }
+        throw networkError;
+      }
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "保存できませんでした");
       setEntries((items) =>
@@ -2043,7 +2126,14 @@ export default function Home() {
     const response = await fetch("/api/entries", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: ids.map(Number) }),
+      body: JSON.stringify({
+        ids: ids.map(Number),
+        expectedUpdatedAt: Object.fromEntries(
+          entries
+            .filter((entry) => ids.includes(entry.id))
+            .map((entry) => [entry.id, entry.updatedAt]),
+        ),
+      }),
     });
     const data = await response.json();
     if (data.deleted?.length) {
@@ -2265,7 +2355,7 @@ export default function Home() {
     const response = await fetch("/api/sites", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: card.masterId, ...values }),
+      body: JSON.stringify({ id: card.masterId, expectedUpdatedAt: card.updatedAt ?? "", ...values }),
     });
     const data = await response.json();
     if (!response.ok)
@@ -2358,7 +2448,9 @@ export default function Home() {
     }));
     try {
       const uploaded: SiteDocument[] = [];
-      for (const file of selectedFiles) {
+      for (const original of selectedFiles) {
+        const file = await compressPhoto(original);
+        if (file.size > 10 * 1024 * 1024) throw new Error(`「${file.name}」は圧縮後も10MBを超えています`);
         const query = new URLSearchParams({
           siteKey,
           fileName: file.name || "名称未設定",
@@ -3208,6 +3300,7 @@ export default function Home() {
           type,
           id: option?.id,
           name,
+          expectedUpdatedAt: option?.updatedAt,
         }),
       });
       const data = await response.json();
@@ -3261,7 +3354,7 @@ export default function Home() {
       const response = await fetch("/api/masters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, type, id: option.id }),
+        body: JSON.stringify({ action, type, id: option.id, expectedUpdatedAt: option.updatedAt }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "更新できませんでした");
@@ -3316,36 +3409,6 @@ export default function Home() {
     } catch (error) {
       setToolMessage(
         errorMessage(error, "編集できませんでした"),
-      );
-    }
-  }
-
-  async function archiveSite(card: SiteCardData) {
-    if (!card.masterId) return;
-    if (
-      !window.confirm(
-        `「${card.site || "現場名不明"}」を現場一覧から非表示にしますか？\n勤務記録・予定・資料は削除されません。`,
-      )
-    )
-      return;
-    try {
-      const response = await fetch("/api/sites", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: card.masterId, action: "archive" }),
-      });
-      const data = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "非表示にできませんでした");
-      setSiteMasters((current) =>
-        current.map((site) => (site.id === card.masterId ? data.site : site)),
-      );
-      setSiteNameMessage(
-        `「${card.site}」を非表示にしました。設定から復元できます`,
-      );
-    } catch (error) {
-      setSiteNameMessage(
-        errorMessage(error, "非表示にできませんでした"),
       );
     }
   }
@@ -3565,6 +3628,9 @@ export default function Home() {
             knownHotels={knownHotels}
             error={error}
             saving={saving}
+            voiceSiteOptions={voiceSiteOptions}
+            offlinePendingCount={offlinePendingCount}
+            offlineMessage={offlineMessage}
           />
         )}
 
@@ -3653,7 +3719,6 @@ export default function Home() {
             loadSiteDocuments={loadSiteDocuments}
             openSiteNameEditor={openSiteNameEditor}
             openSiteLocationEditor={openSiteLocationEditor}
-            archiveSite={archiveSite}
             siteNameDraft={siteNameDraft}
             setSiteNameDraft={setSiteNameDraft}
             saveSiteName={saveSiteName}

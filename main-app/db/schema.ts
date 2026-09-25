@@ -22,6 +22,7 @@ export const attendanceEntries = sqliteTable("attendance_entries", {
   syncError: text("sync_error").notNull().default(""),
   lastSyncedAt: text("last_synced_at").notNull().default(""),
   lastModifiedSource: text("last_modified_source").notNull().default("app"),
+  updatedAt: text("updated_at").notNull().default(""),
 });
 
 export const calendarSettings = sqliteTable("calendar_settings", {
@@ -79,7 +80,20 @@ export const siteDocuments = sqliteTable("site_documents", {
   contentType: text("content_type").notNull(),
   size: integer("size").notNull(),
   uploadedAt: text("uploaded_at").notNull(),
+  archivedAt: text("archived_at").notNull().default(""),
 }, (table) => [uniqueIndex("site_documents_object_key_unique").on(table.objectKey)]);
+
+export const auditLogs = sqliteTable("audit_logs", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  actorName: text("actor_name").notNull().default("子野井"),
+  action: text("action").notNull(),
+  targetType: text("target_type").notNull(),
+  targetId: integer("target_id"),
+  targetName: text("target_name").notNull().default(""),
+  beforeJson: text("before_json").notNull().default(""),
+  afterJson: text("after_json").notNull().default(""),
+  createdAt: text("created_at").notNull(),
+});
 
 export const siteMasters = sqliteTable("site_masters", {
   id: integer("id").primaryKey({ autoIncrement: true }),

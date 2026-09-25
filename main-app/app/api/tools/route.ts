@@ -1,6 +1,7 @@
 import { asc, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { toolChecks, toolItems, toolSets } from "../../../db/schema";
+import { appendAudit } from "../../lib/audit";
 
 type ToolCategory = "通常業務" | "出張";
 
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
         name: body.name.trim(),
         sortOrder: (lastInCategory?.sortOrder ?? -1) + 1,
       }).returning();
+      await appendAudit({ action: "create", targetType: "toolSet", targetId: set.id, targetName: set.name, after: set });
       return Response.json({ set: { ...set, items: [] } }, { status: 201 });
     }
     if (body.action === "add_item") {
@@ -90,6 +92,7 @@ export async function POST(request: Request) {
         name: body.name.trim(),
         sortOrder: (lastInSet?.sortOrder ?? -1) + 1,
       }).returning();
+      await appendAudit({ action: "create", targetType: "toolItem", targetId: item.id, targetName: item.name, after: item });
       return Response.json({ item: { ...item, checked: false } }, { status: 201 });
     }
     if (body.action === "toggle") {
@@ -134,9 +137,13 @@ export async function DELETE(request: Request) {
     if (!body.id) throw new Error("削除対象が見つかりません");
     const db = await getDb();
     if (body.type === "item") {
+      const [before] = await db.select().from(toolItems).where(eq(toolItems.id, body.id)).limit(1);
       await db.update(toolItems).set({ archivedAt: new Date().toISOString() }).where(eq(toolItems.id, body.id));
+      if (before) await appendAudit({ action: "archive", targetType: "toolItem", targetId: before.id, targetName: before.name, before });
     } else if (body.type === "set") {
+      const [before] = await db.select().from(toolSets).where(eq(toolSets.id, body.id)).limit(1);
       await db.update(toolSets).set({ archivedAt: new Date().toISOString() }).where(eq(toolSets.id, body.id));
+      if (before) await appendAudit({ action: "archive", targetType: "toolSet", targetId: before.id, targetName: before.name, before });
     } else throw new Error("削除対象が正しくありません");
     return Response.json({ ok: true });
   } catch (error) {
@@ -150,8 +157,16 @@ export async function PATCH(request: Request) {
     const name = body.name?.trim();
     if (!body.id || !name) throw new Error("新しい名前を入力してください");
     const db = await getDb();
-    if (body.type === "set") await db.update(toolSets).set({ name }).where(eq(toolSets.id, body.id));
-    else if (body.type === "item") await db.update(toolItems).set({ name }).where(eq(toolItems.id, body.id));
+    if (body.type === "set") {
+      const [before] = await db.select().from(toolSets).where(eq(toolSets.id, body.id)).limit(1);
+      await db.update(toolSets).set({ name }).where(eq(toolSets.id, body.id));
+      if (before) await appendAudit({ action: "update", targetType: "toolSet", targetId: before.id, targetName: name, before, after: { ...before, name } });
+    }
+    else if (body.type === "item") {
+      const [before] = await db.select().from(toolItems).where(eq(toolItems.id, body.id)).limit(1);
+      await db.update(toolItems).set({ name }).where(eq(toolItems.id, body.id));
+      if (before) await appendAudit({ action: "update", targetType: "toolItem", targetId: before.id, targetName: name, before, after: { ...before, name } });
+    }
     else throw new Error("編集対象が正しくありません");
     return Response.json({ ok: true, name });
   } catch (error) {

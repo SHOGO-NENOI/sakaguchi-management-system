@@ -1,5 +1,15 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+
+test("does not offer a hide action on site cards", async () => {
+  const source = await readFile(
+    new URL("../app/components/SitesTab.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.doesNotMatch(source, />\s*非表示\s*</);
+  assert.doesNotMatch(source, /archiveSite/);
+});
 
 test("renders the Sakaguchi attendance metadata", async () => {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
@@ -40,4 +50,23 @@ test("renders the Sakaguchi attendance metadata", async () => {
     /aria-label="メインメニュー"[\s\S]*?>入力<\/button>[\s\S]*?>予定<\/button>[\s\S]*?>記録<\/button>[\s\S]*?>現場<\/button>[\s\S]*?>集計<\/button>/i,
   );
   assert.doesNotMatch(html, /class="app-more"/i);
+  assert.match(html, /音声アシスタント・まとめて音声入力/i);
+  assert.match(html, /フォームへ反映/i);
+});
+
+test("includes offline, backup, restore, audit, and concurrency safeguards", async () => {
+  const [page, entriesApi, worker, config, schema] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../wrangler.jsonc", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /queueOfflineEntry\(payload\)/);
+  assert.match(page, /attendanceWarnings\(form, entries, editingId\)/);
+  assert.match(entriesApi, /expectedUpdatedAt/);
+  assert.match(entriesApi, /status: 409/);
+  assert.match(worker, /createDailyBackup\(false\)/);
+  assert.match(config, /"0 18 \* \* \*"/);
+  assert.match(schema, /export const auditLogs/);
 });

@@ -2,6 +2,8 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { attendanceEntries, googleOAuthSettings } from "../../../../db/schema";
 import { googleFetch } from "../../../lib/google-api";
+import { ensureOperationalSchema } from "../../../lib/operational-schema";
+import { appendAudit } from "../../../lib/audit";
 import { syncGoogleCalendar, syncSheet } from "../../entries/google-calendar";
 
 type GoogleEvent = {
@@ -39,6 +41,7 @@ function duplicateGroups(events: GoogleEvent[], linkedIds: Set<string>) {
 
 export async function GET() {
   try {
+    await ensureOperationalSchema();
     const db = await getDb();
     const rows = await db.select().from(attendanceEntries);
     const active = rows.filter((row) => !row.deletedAt);
@@ -60,6 +63,7 @@ export async function GET() {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { action?: "reconcile" | "retry" | "cleanup"; eventIds?: string[]; entryIds?: number[] };
   try {
+    await ensureOperationalSchema();
     const db = await getDb();
     if (body.action === "cleanup") {
       const eventIds = [...new Set(body.eventIds ?? [])].filter(Boolean);
@@ -125,9 +129,11 @@ export async function POST(request: Request) {
           if (event.location) changes.address = replacePart(changes.address ?? row.address, index, event.location);
         });
         if (Object.keys(changes).length) {
-          const next = { ...row, ...changes };
-          await db.update(attendanceEntries).set({ ...changes, syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "google" }).where(eq(attendanceEntries.id, row.id));
+          const updatedAt = new Date().toISOString();
+          const next = { ...row, ...changes, updatedAt, syncStatus: "synced", syncError: "", lastSyncedAt: updatedAt, lastModifiedSource: "google" };
+          await db.update(attendanceEntries).set({ ...changes, updatedAt, syncStatus: "synced", syncError: "", lastSyncedAt: updatedAt, lastModifiedSource: "google" }).where(eq(attendanceEntries.id, row.id));
           await syncSheet(next, "upsert"); updated += 1;
+          await appendAudit({ action: "update", targetType: "entry", targetId: row.id, targetName: `${next.workDate} ${next.site || next.workType}`, actorName: "Googleカレンダー", before: row, after: next });
         }
       }
       const completedAt = new Date().toISOString();

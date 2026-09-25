@@ -2,6 +2,8 @@ import { and, desc, eq, inArray, lt, ne } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { attendanceEntries } from "../../../db/schema";
 import { syncGoogleCalendar } from "./google-calendar";
+import { appendAudit } from "../../lib/audit";
+import { ensureOperationalSchema } from "../../lib/operational-schema";
 
 type Payload = {
   id?: number;
@@ -21,6 +23,8 @@ type Payload = {
   hotelName?: string;
   calendarEndDate?: string;
   suppressCalendar?: boolean;
+  expectedUpdatedAt?: string;
+  updatedAt?: string;
 };
 
 const normalizedWorkType = (workType: string) => ["有給", "公休", "雨天中止", "欠勤"].includes(workType) ? "休み" : workType;
@@ -35,6 +39,7 @@ const mapEntry = (row: typeof attendanceEntries.$inferSelect) => ({
   googleEventId: row.googleEventId,
   deletedAt: row.deletedAt, syncStatus: row.syncStatus, syncError: row.syncError,
   lastSyncedAt: row.lastSyncedAt, lastModifiedSource: row.lastModifiedSource,
+  updatedAt: row.updatedAt,
 });
 
 function values(payload: Payload) {
@@ -53,6 +58,7 @@ function values(payload: Payload) {
 }
 
 export async function GET(request: Request) {
+  await ensureOperationalSchema();
   const db = await getDb();
   const trashCutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   await db.delete(attendanceEntries).where(and(ne(attendanceEntries.deletedAt, ""), lt(attendanceEntries.deletedAt, trashCutoff)));
@@ -64,14 +70,16 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    await ensureOperationalSchema();
     const payload = await request.json() as Payload;
     const db = await getDb();
-    let [row] = await db.insert(attendanceEntries).values(values(payload)).returning();
+    let [row] = await db.insert(attendanceEntries).values({ ...values(payload), updatedAt: new Date().toISOString() }).returning();
     let warning = "";
     try {
       const sync = await syncGoogleCalendar(row, "upsert", { calendarEndDate: payload.calendarEndDate, suppressCalendar: payload.suppressCalendar });
       if (sync.synced) [row] = await db.update(attendanceEntries).set({ googleEventId: sync.eventId, syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "app" }).where(eq(attendanceEntries.id, row.id)).returning();
     } catch (error) { warning = error instanceof Error ? error.message : "Googleカレンダーに反映できませんでした"; [row] = await db.update(attendanceEntries).set({ syncStatus: "error", syncError: warning }).where(eq(attendanceEntries.id, row.id)).returning(); }
+    await appendAudit({ action: "create", targetType: "entry", targetId: row.id, targetName: `${row.workDate} ${row.site || row.workType}`, after: row });
     return Response.json({ entry: mapEntry(row), warning }, { status: 201 });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "保存できませんでした" }, { status: 400 });
@@ -80,15 +88,24 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
+    await ensureOperationalSchema();
     const payload = await request.json() as Payload;
     if (!payload.id) throw new Error("編集する記録が見つかりません");
     const db = await getDb();
-    let [row] = await db.update(attendanceEntries).set(values(payload)).where(eq(attendanceEntries.id, payload.id)).returning();
+    const [before] = await db.select().from(attendanceEntries).where(eq(attendanceEntries.id, payload.id)).limit(1);
+    if (!before) throw new Error("編集する記録が見つかりません");
+    if ((payload.expectedUpdatedAt ?? payload.updatedAt ?? "") !== before.updatedAt) {
+      return Response.json({ error: "別の端末で先に更新されています。画面を再読み込みしてから編集してください", conflict: true, entry: mapEntry(before) }, { status: 409 });
+    }
+    const updatedAt = new Date().toISOString();
+    let [row] = await db.update(attendanceEntries).set({ ...values(payload), updatedAt }).where(and(eq(attendanceEntries.id, payload.id), eq(attendanceEntries.updatedAt, before.updatedAt))).returning();
+    if (!row) return Response.json({ error: "別の端末で先に更新されています。画面を再読み込みしてから編集してください", conflict: true }, { status: 409 });
     let warning = "";
     try {
       const sync = await syncGoogleCalendar(row, "upsert", { calendarEndDate: payload.calendarEndDate, suppressCalendar: payload.suppressCalendar });
       if (sync.synced) [row] = await db.update(attendanceEntries).set({ googleEventId: sync.eventId, syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "app" }).where(eq(attendanceEntries.id, row.id)).returning();
     } catch (error) { warning = error instanceof Error ? error.message : "Googleカレンダーに反映できませんでした"; [row] = await db.update(attendanceEntries).set({ syncStatus: "error", syncError: warning }).where(eq(attendanceEntries.id, row.id)).returning(); }
+    await appendAudit({ action: "update", targetType: "entry", targetId: row.id, targetName: `${row.workDate} ${row.site || row.workType}`, before, after: row });
     return Response.json({ entry: mapEntry(row), warning });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "更新できませんでした" }, { status: 400 });
@@ -96,7 +113,8 @@ export async function PUT(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const body = await request.json() as { id?: number | string; ids?: Array<number | string> };
+  await ensureOperationalSchema();
+  const body = await request.json() as { id?: number | string; ids?: Array<number | string>; expectedUpdatedAt?: Record<string, string> };
 
   // APIのGETでは id を文字列として返しているため、
   // フロントから "123" のような文字列IDが送られてきても数値へ変換して受け付ける。
@@ -116,8 +134,23 @@ export async function DELETE(request: Request) {
   const failed: { id: number; error: string }[] = [];
   const deleted: number[] = [];
   for (const row of rows) {
+    const expectedUpdatedAt = body.expectedUpdatedAt?.[String(row.id)];
+    if (expectedUpdatedAt !== undefined && expectedUpdatedAt !== row.updatedAt) {
+      failed.push({ id: row.id, error: "別の端末で先に更新されています。再読み込みしてください" });
+      continue;
+    }
     // アプリ側の削除を最優先する。
     // Googleカレンダー側の削除に失敗しても、勤務記録はゴミ箱へ移動する。
+    const archivedAt = new Date().toISOString();
+    const [archived] = await db.update(attendanceEntries).set({
+      deletedAt: archivedAt,
+      updatedAt: archivedAt,
+      lastModifiedSource: "app",
+    }).where(and(eq(attendanceEntries.id, row.id), eq(attendanceEntries.updatedAt, row.updatedAt))).returning();
+    if (!archived) {
+      failed.push({ id: row.id, error: "別の端末で先に更新されています。再読み込みしてください" });
+      continue;
+    }
     let syncStatus = "synced";
     let syncError = "";
     try {
@@ -129,25 +162,27 @@ export async function DELETE(request: Request) {
     }
 
     await db.update(attendanceEntries).set({
-      deletedAt: new Date().toISOString(),
       syncStatus,
       syncError,
       lastSyncedAt: syncStatus === "synced" ? new Date().toISOString() : row.lastSyncedAt,
-      lastModifiedSource: "app",
     }).where(eq(attendanceEntries.id, row.id));
 
     deleted.push(row.id);
+    await appendAudit({ action: "archive", targetType: "entry", targetId: row.id, targetName: `${row.workDate} ${row.site || row.workType}`, before: row });
   }
   return Response.json({ ok: failed.length === 0, deleted, failed }, { status: failed.length ? 409 : 200 });
 }
 
 export async function PATCH(request: Request) {
+  await ensureOperationalSchema();
   const body = await request.json() as { ids?: number[]; action?: "restore" | "purge" };
   const ids = [...new Set(body.ids ?? [])].filter(Number.isInteger);
   if (!ids.length) return Response.json({ error: "対象の記録がありません" }, { status: 400 });
   const db = await getDb();
   if (body.action === "purge") {
+    const before = await db.select().from(attendanceEntries).where(and(inArray(attendanceEntries.id, ids), ne(attendanceEntries.deletedAt, "")));
     await db.delete(attendanceEntries).where(and(inArray(attendanceEntries.id, ids), ne(attendanceEntries.deletedAt, "")));
+    for (const row of before) await appendAudit({ action: "purge", targetType: "entry", targetId: row.id, targetName: `${row.workDate} ${row.site || row.workType}`, before: row });
     return Response.json({ ok: true, purged: ids.length });
   }
   const rows = await db.select().from(attendanceEntries).where(inArray(attendanceEntries.id, ids));
@@ -156,8 +191,9 @@ export async function PATCH(request: Request) {
   for (const row of rows) try {
     const activeRow = { ...row, deletedAt: "", googleEventId: "" };
     const sync = await syncGoogleCalendar(activeRow, "upsert");
-    await db.update(attendanceEntries).set({ deletedAt: "", googleEventId: sync.eventId, syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "app" }).where(eq(attendanceEntries.id, row.id));
+    await db.update(attendanceEntries).set({ deletedAt: "", googleEventId: sync.eventId, syncStatus: "synced", syncError: "", lastSyncedAt: new Date().toISOString(), lastModifiedSource: "app", updatedAt: new Date().toISOString() }).where(eq(attendanceEntries.id, row.id));
     restored.push(row.id);
+    await appendAudit({ action: "restore", targetType: "entry", targetId: row.id, targetName: `${row.workDate} ${row.site || row.workType}`, before: row });
   } catch (error) { failed.push({ id: row.id, error: error instanceof Error ? error.message : "復元できませんでした" }); }
   return Response.json({ ok: failed.length === 0, restored, failed }, { status: failed.length ? 409 : 200 });
 }

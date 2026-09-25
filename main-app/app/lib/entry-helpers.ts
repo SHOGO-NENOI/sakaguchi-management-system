@@ -543,6 +543,7 @@ export const emptyEntry = (): Omit<Entry, "id"> => ({
   syncError: "",
   lastSyncedAt: "",
   lastModifiedSource: "app",
+  updatedAt: "",
 });
 
 export function toMinutes(value: string) {
