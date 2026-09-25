@@ -268,12 +268,16 @@ export default function EntryTab({
       )}
 
       <form onSubmit={submit}>
+        <div className="required-fields-guide" role="note">
+          <span><strong>必須</strong> が付いた項目は、保存前に必ず入力してください。</span>
+          <small>それ以外の未入力項目は、保存時に確認メッセージでお知らせします。</small>
+        </div>
         <div
           className={`field-grid top-fields ${form.type === "休み" ? "off-mode" : ""}`}
         >
           {form.type !== "休み" && (
             <label>
-              <span>日付</span>
+              <span>日付 <b className="required-badge">必須</b></span>
               <input
                 type="date"
                 required
@@ -298,7 +302,7 @@ export default function EntryTab({
             </label>
           )}
           <fieldset>
-            <legend>勤務区分</legend>
+            <legend>勤務区分 <b className="required-badge">必須</b></legend>
             <div className="segmented">
               {workTypes.map((type) => (
                 <button
@@ -345,7 +349,7 @@ export default function EntryTab({
           <div className="off-entry-panel">
             <div className="off-date-range">
               <label>
-                <span>休みの開始日</span>
+                <span>休みの開始日 <b className="required-badge">必須</b></span>
                 <input
                   type="date"
                   required
@@ -359,7 +363,7 @@ export default function EntryTab({
               </label>
               <span className="off-range-arrow">〜</span>
               <label>
-                <span>休みの終了日</span>
+                <span>休みの終了日 <b className="required-badge">必須</b></span>
                 <input
                   type="date"
                   required
@@ -494,7 +498,7 @@ export default function EntryTab({
                           {needsTime && (
                             <div className="site-time-fields wide-input">
                               <label>
-                                <span>この現場の開始時刻</span>
+                                <span>この現場の開始時刻 <b className="required-badge">必須</b></span>
                                 <input
                                   type="time"
                                   required
@@ -506,7 +510,7 @@ export default function EntryTab({
                               </label>
                               <span className="arrow">→</span>
                               <label>
-                                <span>終了時刻</span>
+                                <span>終了時刻 <b className="required-badge">必須</b></span>
                                 <input
                                   type="time"
                                   required

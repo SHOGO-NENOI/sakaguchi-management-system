@@ -394,6 +394,32 @@ body {
   color: #644006;
 }
 .offline-entry-status span { font-size: 0.86rem; }
+.required-fields-guide {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border-left: 4px solid #c53d35;
+  border-radius: 8px;
+  background: color-mix(in srgb, #c53d35 7%, var(--paper));
+  color: var(--ink);
+}
+.required-fields-guide small { color: var(--muted); }
+.required-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 18px;
+  margin-left: 4px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  color: #fff;
+  background: #c53d35;
+  font-size: 0.66rem;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  vertical-align: middle;
+}
 .operations-panel { display: grid; gap: 12px; margin-top: 22px; }
 .backup-operation-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 12px; padding: 14px; }
 .backup-operation-card > div { display: grid; gap: 4px; }

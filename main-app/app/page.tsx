@@ -76,7 +76,7 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 
-const APP_VERSION = "2.3.0";
+const APP_VERSION = "2.3.1";
 const APP_UPDATED_AT = "2026年9月25日";
 const CURRENT_USER_NAME = "子野井";
 const defaultPaySettings: PaySettings = {

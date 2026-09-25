@@ -52,6 +52,8 @@ test("renders the Sakaguchi attendance metadata", async () => {
   assert.doesNotMatch(html, /class="app-more"/i);
   assert.match(html, /音声アシスタント・まとめて音声入力/i);
   assert.match(html, /フォームへ反映/i);
+  assert.match(html, /必須[^<]*<\/b>/i);
+  assert.match(html, /保存前に必ず入力してください/i);
 });
 
 test("includes offline, backup, restore, audit, and concurrency safeguards", async () => {
