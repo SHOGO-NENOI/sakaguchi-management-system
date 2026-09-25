@@ -76,7 +76,7 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.4.0";
 const APP_UPDATED_AT = "2026年9月25日";
 const CURRENT_USER_NAME = "子野井";
 const defaultPaySettings: PaySettings = {
@@ -85,6 +85,12 @@ const defaultPaySettings: PaySettings = {
   overtimeMultiplier: "1.25",
   tripAllowance: "1500",
   customAllowances: [],
+  healthInsurance: "",
+  pension: "",
+  employmentInsurance: "",
+  incomeTax: "",
+  residentTax: "",
+  otherDeductions: "",
 };
 
 const workTypes: WorkType[] = ["1日", "半日", "休み"];
@@ -945,14 +951,34 @@ export default function Home() {
       (sum, allowance) => sum + allowance.amount,
       0,
     );
+    const gross =
+      base + dailyExtra + weeklyExtra + tripAllowance + customAllowanceTotal;
+    const deductionMonths = summaryPeriod === "annual" ? workedMonthCount : summary.days > 0 ? 1 : 0;
+    const deductions = [
+      { key: "healthInsurance", name: "健康保険", monthly: Math.max(0, Number(paySettings.healthInsurance) || 0) },
+      { key: "pension", name: "厚生年金", monthly: Math.max(0, Number(paySettings.pension) || 0) },
+      { key: "employmentInsurance", name: "雇用保険", monthly: Math.max(0, Number(paySettings.employmentInsurance) || 0) },
+      { key: "incomeTax", name: "所得税", monthly: Math.max(0, Number(paySettings.incomeTax) || 0) },
+      { key: "residentTax", name: "住民税", monthly: Math.max(0, Number(paySettings.residentTax) || 0) },
+      { key: "otherDeductions", name: "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
+    ].map((deduction) => ({
+      ...deduction,
+      amount: Math.round(deduction.monthly * deductionMonths),
+    }));
+    const deductionTotal = deductions.reduce(
+      (sum, deduction) => sum + deduction.amount,
+      0,
+    );
     return {
       base,
       extra: dailyExtra,
       weeklyExtra,
       tripAllowance,
       customAllowances,
-      total:
-        base + dailyExtra + weeklyExtra + tripAllowance + customAllowanceTotal,
+      total: gross,
+      deductions,
+      deductionTotal,
+      takeHome: Math.max(0, gross - deductionTotal),
     };
   }, [
     paySettings,
@@ -962,6 +988,7 @@ export default function Home() {
     summary.trips,
     weeklyOvertimeMinutes,
     workedMonthCount,
+    summaryPeriod,
   ]);
   const selfDinnerEntries = useMemo(
     () =>

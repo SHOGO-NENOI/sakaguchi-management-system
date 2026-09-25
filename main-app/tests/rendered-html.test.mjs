@@ -72,3 +72,16 @@ test("includes offline, backup, restore, audit, and concurrency safeguards", asy
   assert.match(config, /"0 18 \* \* \*"/);
   assert.match(schema, /export const auditLogs/);
 });
+
+test("includes configurable deductions and take-home estimate", async () => {
+  const [page, summary, types] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/SummaryTab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/types.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /takeHome:\s*Math\.max\(0, gross - deductionTotal\)/);
+  assert.match(summary, /概算手取り/);
+  assert.match(summary, /健康保険/);
+  assert.match(summary, /厚生年金/);
+  assert.match(types, /residentTax: string/);
+});

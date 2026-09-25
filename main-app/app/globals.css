@@ -1652,8 +1652,33 @@ textarea {
   padding-left: 14px;
   border-left: 1px solid #d7e2de;
 }
+.gross-breakdown { grid-column: 2; grid-row: 1; }
+.take-home-estimate {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #8fc8b2;
+  border-radius: 10px;
+  background: #e7f7f0;
+}
+.take-home-estimate small,
+.take-home-estimate strong { display: block; }
+.take-home-estimate small { color: #557269; font-size: 9px; }
+.take-home-estimate strong { color: var(--green-dark); font-size: 19px; }
+.take-home-estimate > span { color: #79545a; font-size: 9px; white-space: nowrap; }
+.deduction-breakdown {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  color: #79545a;
+}
 .pay-settings {
   position: relative;
+  grid-column: 3;
+  grid-row: 1;
 }
 .pay-settings > summary {
   padding: 7px 24px 7px 9px;
@@ -1724,6 +1749,21 @@ textarea {
   flex-direction: column;
   gap: 8px;
 }
+.pay-deductions-settings {
+  grid-column: 1/-1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+.pay-deductions-heading {
+  grid-column: 1/-1;
+  display: grid;
+  gap: 2px;
+}
+.pay-deductions-heading strong { color: var(--ink); font-size: 11px; }
+.pay-deductions-heading small { color: var(--muted); font-size: 9px; }
 .custom-allowances-label {
   font-size: 9px;
   color: #64736e;
@@ -3975,8 +4015,10 @@ footer {
   }
   .pay-breakdown {
     grid-column: 1/-1;
-    grid-row: 2;
   }
+  .gross-breakdown { grid-row: 2; }
+  .take-home-estimate { grid-column: 1/-1; grid-row: 3; }
+  .deduction-breakdown { grid-column: 1/-1; grid-row: 4; }
   .pay-settings {
     grid-column: 2;
     grid-row: 1;
@@ -3984,6 +4026,8 @@ footer {
   .pay-settings > div {
     grid-template-columns: 1fr;
   }
+  .pay-deductions-settings { grid-template-columns: 1fr; }
+  .pay-deductions-heading { grid-column: auto; }
   .pay-settings p {
     grid-column: auto;
   }

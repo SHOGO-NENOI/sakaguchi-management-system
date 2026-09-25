@@ -38,6 +38,9 @@ type SummaryTabProps = {
     tripAllowance: number;
     customAllowances: { id: string; name: string; amount: number }[];
     total: number;
+    deductions: { key: string; name: string; monthly: number; amount: number }[];
+    deductionTotal: number;
+    takeHome: number;
   } | null;
   paySettings: PaySettings;
   updatePaySettings: (value: PaySettings) => void;
@@ -309,7 +312,7 @@ export default function SummaryTab({
         <div className="pay-estimate-main">
           <span className="pay-icon">給</span>
           <div>
-            <small>概算給与（控除前）</small>
+            <small>概算給与（支給額）</small>
             <strong>
               {estimatedPay
                 ? `¥${estimatedPay.total.toLocaleString("ja-JP")}`
@@ -318,7 +321,8 @@ export default function SummaryTab({
           </div>
         </div>
         {estimatedPay && (
-          <div className="pay-breakdown">
+          <>
+          <div className="pay-breakdown gross-breakdown">
             <span>
               基本給 ¥{estimatedPay.base.toLocaleString("ja-JP")}
             </span>
@@ -341,6 +345,23 @@ export default function SummaryTab({
               </span>
             ))}
           </div>
+          <div className="take-home-estimate">
+            <div>
+              <small>概算手取り</small>
+              <strong>¥{estimatedPay.takeHome.toLocaleString("ja-JP")}</strong>
+            </div>
+            <span>控除合計 −¥{estimatedPay.deductionTotal.toLocaleString("ja-JP")}</span>
+          </div>
+          {estimatedPay.deductions.some((deduction) => deduction.amount > 0) && (
+            <div className="pay-breakdown deduction-breakdown">
+              {estimatedPay.deductions.filter((deduction) => deduction.amount > 0).map((deduction) => (
+                <span key={deduction.key}>
+                  {deduction.name} −¥{deduction.amount.toLocaleString("ja-JP")}
+                </span>
+              ))}
+            </div>
+          )}
+          </>
         )}
         <details className="pay-settings">
           <summary>給与設定</summary>
@@ -485,8 +506,41 @@ export default function SummaryTab({
                 ＋ 手当を追加
               </button>
             </div>
+            <div className="pay-deductions-settings">
+              <div className="pay-deductions-heading">
+                <strong>毎月の控除額</strong>
+                <small>給与明細の金額を入力すると概算手取りへ反映します</small>
+              </div>
+              {([
+                ["healthInsurance", "健康保険"],
+                ["pension", "厚生年金"],
+                ["employmentInsurance", "雇用保険"],
+                ["incomeTax", "所得税"],
+                ["residentTax", "住民税"],
+                ["otherDeductions", "その他控除"],
+              ] as const).map(([key, label]) => (
+                <label key={key}>
+                  <span>{label}</span>
+                  <div className="pay-input-wrap">
+                    <b>¥</b>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      step="100"
+                      placeholder="0"
+                      value={paySettings[key]}
+                      onChange={(event) => updatePaySettings({
+                        ...paySettings,
+                        [key]: event.target.value,
+                      })}
+                    />
+                  </div>
+                </label>
+              ))}
+            </div>
             <p>
-              計算：日給×勤務日数（半日は0.5日）＋早出・残業時間×日給換算の時間単価×倍率＋週40時間を超えた分×日給換算の時間単価×倍率＋出張日数×出張手当＋その他の手当。税金・保険などは含まない概算です。
+              計算：支給額から登録した健康保険・厚生年金・雇用保険・所得税・住民税・その他控除を差し引きます。年間集計では、勤務実績がある月数分の月額控除を計算します。実際の給与明細と差が出る場合があります。
             </p>
           </div>
         </details>

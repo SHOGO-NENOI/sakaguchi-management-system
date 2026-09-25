@@ -50,6 +50,12 @@ export type PaySettings = {
   overtimeMultiplier: string;
   tripAllowance: string;
   customAllowances: CustomAllowance[];
+  healthInsurance: string;
+  pension: string;
+  employmentInsurance: string;
+  incomeTax: string;
+  residentTax: string;
+  otherDeductions: string;
 };
 export type SiteCardData = {
   masterId?: number;
