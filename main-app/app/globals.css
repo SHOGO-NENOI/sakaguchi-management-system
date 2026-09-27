@@ -1030,6 +1030,24 @@ textarea {
   flex-wrap: wrap;
   gap: 5px;
 }
+.personnel-options > .support-personnel-options {
+  display: block;
+  margin-top: 9px;
+  padding-top: 8px;
+  border-top: 1px solid #d5e0dc;
+}
+.support-personnel-options > small {
+  display: block;
+  margin-bottom: 6px;
+  color: #71807b;
+  font-size: 10px;
+  font-weight: 700;
+}
+.support-personnel-options > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
 .personnel-options button {
   padding: 5px 8px;
   border: 1px solid #cad8d3;
@@ -2668,6 +2686,11 @@ textarea {
   color: var(--ink);
   background: var(--soft);
   border-color: var(--line);
+}
+.site-card-button-row > button.site-plan-button {
+  color: #fff;
+  background: var(--green);
+  border-color: var(--green);
 }
 .site-card-button-row > button.danger {
   color: #9f3941;

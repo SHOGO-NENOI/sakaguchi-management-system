@@ -76,9 +76,11 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 
-const APP_VERSION = "2.4.1";
+const APP_VERSION = "2.5.0";
 const APP_UPDATED_AT = "2026年9月27日";
 const CURRENT_USER_NAME = "子野井";
+const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
+const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
@@ -1437,46 +1439,71 @@ export default function Home() {
     { length: siteRowCount },
     (_, index) => rawFormNotes[index] ?? "",
   );
-  const knownSites = useMemo(
+  const siteInputOptions = useMemo(
     () =>
-      Array.from(
-        new Set(entries.flatMap((entry) => splitSites(entry.site))),
-      ).sort((a, b) => a.localeCompare(b, "ja")),
-    [entries],
+      siteCards
+        .filter((card) => card.site.trim())
+        .map((card) => ({
+          site: card.site,
+          location: card.location,
+          address:
+            card.address ||
+            coordinateAddresses[coordinateKey(card.coordinates)] ||
+            "",
+          coordinates: card.coordinates,
+        }))
+        .sort((a, b) => a.site.localeCompare(b.site, "ja")),
+    [coordinateAddresses, siteCards],
+  );
+  const knownSites = useMemo(
+    () => [...new Set(siteInputOptions.map((option) => option.site))],
+    [siteInputOptions],
   );
   const knownLocations = useMemo(
     () =>
       Array.from(
-        new Set(entries.flatMap((entry) => splitSites(entry.location))),
+        new Set([
+          ...siteInputOptions.map((option) => option.location).filter(Boolean),
+          ...entries.flatMap((entry) => splitSites(entry.location)),
+        ]),
       ).sort((a, b) => a.localeCompare(b, "ja")),
-    [entries],
+    [entries, siteInputOptions],
   );
   const knownAddresses = useMemo(
     () =>
       Array.from(
-        new Set(entries.flatMap((entry) => splitSites(entry.address))),
+        new Set([
+          ...siteInputOptions.map((option) => option.address).filter(Boolean),
+          ...entries.flatMap((entry) => splitSites(entry.address)),
+        ]),
       ).sort((a, b) => a.localeCompare(b, "ja")),
-    [entries],
+    [entries, siteInputOptions],
   );
   const knownPersonnelNames = useMemo(() => {
     const active = masterOptions.person
       .filter((option) => !option.archivedAt)
       .map((option) => option.name);
-    return active.length
-      ? active
-      : Array.from(
+    const history = Array.from(
           new Set(
             entries.flatMap((entry) =>
               entry.personnelNames.split(SITE_SEPARATOR).flatMap(splitNames),
             ),
           ),
-        ).sort((a, b) => a.localeCompare(b, "ja"));
+        );
+    return [...new Set([...REGULAR_PERSONNEL_NAMES, ...DEFAULT_SUPPORT_PERSONNEL_NAMES, ...active, ...history])];
   }, [entries, masterOptions.person]);
   const masterPersonnelNames = useMemo(
-    () =>
-      masterOptions.person
+    () => [...REGULAR_PERSONNEL_NAMES],
+    [],
+  );
+  const supportPersonnelNames = useMemo(
+    () => [...new Set([
+      ...DEFAULT_SUPPORT_PERSONNEL_NAMES,
+      ...masterOptions.person
         .filter((option) => !option.archivedAt)
-        .map((option) => option.name),
+        .map((option) => option.name)
+        .filter((name) => !REGULAR_PERSONNEL_NAMES.includes(name)),
+    ])],
     [masterOptions.person],
   );
   const knownWorkOptions = useMemo(() => {
@@ -1497,18 +1524,7 @@ export default function Home() {
       ).sort((a, b) => a.localeCompare(b, "ja")),
     [entries],
   );
-  const voiceSiteOptions = useMemo(
-    () =>
-      siteMasters
-        .filter((site) => !site.archivedAt)
-        .map((site) => ({
-          site: site.site,
-          location: site.location,
-          address: site.address,
-          coordinates: site.coordinates,
-        })),
-    [siteMasters],
-  );
+  const voiceSiteOptions = siteInputOptions;
   const previousSiteVisits = useMemo(() => {
     const sites = form.site ? form.site.split(SITE_SEPARATOR) : [];
     const locations = form.location ? form.location.split(SITE_SEPARATOR) : [];
@@ -2824,9 +2840,47 @@ export default function Home() {
   }
 
   function updateSite(index: number, value: string) {
-    const next = [...formSites];
-    next[index] = value;
-    setForm({ ...form, site: next.join(SITE_SEPARATOR) });
+    const normalize = (text: string) => text.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase();
+    const candidates = siteInputOptions.filter((option) => normalize(option.site) === normalize(value));
+    const matched = candidates.find((option) => option.location === formLocations[index]) ?? candidates[0];
+    const sites = [...formSites];
+    const locations = [...formLocations];
+    const addresses = [...formAddresses];
+    const coordinates = [...formCoordinates];
+    sites[index] = value;
+    if (matched) {
+      locations[index] = matched.location;
+      addresses[index] = matched.address;
+      coordinates[index] = matched.coordinates;
+    }
+    setForm({
+      ...form,
+      site: sites.join(SITE_SEPARATOR),
+      location: locations.join(SITE_SEPARATOR),
+      address: addresses.join(SITE_SEPARATOR),
+      coordinates: coordinates.join(SITE_SEPARATOR),
+    });
+  }
+
+  function createPlanForSite(card: SiteCardData) {
+    const date = nextDate(today());
+    const address =
+      card.address ||
+      coordinateAddresses[coordinateKey(card.coordinates)] ||
+      "";
+    setForm({
+      ...emptyEntry(),
+      date,
+      site: card.site,
+      location: card.location,
+      address,
+      coordinates: card.coordinates,
+    });
+    setOffEndDate(date);
+    setEditingId(null);
+    setEntryIntent("plan");
+    setActiveTab("entry");
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function updateLocation(index: number, value: string) {
@@ -3645,6 +3699,7 @@ export default function Home() {
             getCurrentAddress={getCurrentAddress}
             locationLookupMessages={locationLookupMessages}
             masterPersonnelNames={masterPersonnelNames}
+            supportPersonnelNames={supportPersonnelNames}
             toggleAllPersonnel={toggleAllPersonnel}
             togglePersonnelName={togglePersonnelName}
             knownWorkOptions={knownWorkOptions}
@@ -3760,6 +3815,7 @@ export default function Home() {
             deleteSiteDocument={deleteSiteDocument}
             siteDocumentLoadingKey={siteDocumentLoadingKey}
             siteDocumentMessages={siteDocumentMessages}
+            createPlanForSite={createPlanForSite}
           />
         )}
 

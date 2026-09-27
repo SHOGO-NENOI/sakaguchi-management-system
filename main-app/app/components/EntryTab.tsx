@@ -58,6 +58,7 @@ type EntryTabProps = {
   getCurrentAddress: (index: number) => void;
   locationLookupMessages: Record<number, string>;
   masterPersonnelNames: string[];
+  supportPersonnelNames: string[];
   toggleAllPersonnel: (index: number) => void;
   togglePersonnelName: (index: number, name: string) => void;
   knownWorkOptions: string[];
@@ -112,6 +113,7 @@ export default function EntryTab({
   getCurrentAddress,
   locationLookupMessages,
   masterPersonnelNames,
+  supportPersonnelNames,
   toggleAllPersonnel,
   togglePersonnelName,
   knownWorkOptions,
@@ -626,7 +628,7 @@ export default function EntryTab({
                               }
                             />
                           </label>
-                          {knownPersonnelNames.length > 0 && (
+                          {masterPersonnelNames.length > 0 && (
                             <div className="personnel-options">
                               <small>作業者マスターから選択</small>
                               <div>
@@ -652,7 +654,7 @@ export default function EntryTab({
                                     全員
                                   </button>
                                 )}
-                                {knownPersonnelNames.map((name) => (
+                                {masterPersonnelNames.map((name) => (
                                   <button
                                     type="button"
                                     key={name}
@@ -672,6 +674,24 @@ export default function EntryTab({
                                   </button>
                                 ))}
                               </div>
+                              {supportPersonnelNames.length > 0 && (
+                                <div className="support-personnel-options">
+                                  <small>応援者</small>
+                                  <div>
+                                    {supportPersonnelNames.map((name) => (
+                                      <button
+                                        type="button"
+                                        key={name}
+                                        className={selectedNames.includes(name) ? "selected" : ""}
+                                        onClick={() => togglePersonnelName(index, name)}
+                                      >
+                                        {selectedNames.includes(name) ? "✓ " : ""}
+                                        {name}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           )}
                           <fieldset className="site-work-field wide-input">

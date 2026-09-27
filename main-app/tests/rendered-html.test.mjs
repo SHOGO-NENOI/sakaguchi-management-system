@@ -86,3 +86,17 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /厚生年金/);
   assert.match(types, /residentTax: string/);
 });
+
+test("separates regular workers and supporters and carries site addresses into plans", async () => {
+  const [page, entryTab, sitesTab] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/EntryTab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/SitesTab.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(page, /REGULAR_PERSONNEL_NAMES = \["坂口", "清田", "子野井"\]/);
+  assert.match(page, /DEFAULT_SUPPORT_PERSONNEL_NAMES = \["下岸"\]/);
+  assert.match(page, /addresses\[index\] = matched\.address/);
+  assert.match(page, /function createPlanForSite\(card: SiteCardData\)/);
+  assert.match(entryTab, />応援者</);
+  assert.match(sitesTab, /＋ 予定を追加/);
+});

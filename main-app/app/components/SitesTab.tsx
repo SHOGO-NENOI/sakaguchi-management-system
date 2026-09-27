@@ -73,6 +73,7 @@ type SitesTabProps = {
   deleteSiteDocument: (card: SiteCardData, document: SiteDocument) => void;
   siteDocumentLoadingKey: string | null;
   siteDocumentMessages: Record<string, string>;
+  createPlanForSite: (card: SiteCardData) => void;
 };
 
 export default function SitesTab({
@@ -121,6 +122,7 @@ export default function SitesTab({
   deleteSiteDocument,
   siteDocumentLoadingKey,
   siteDocumentMessages,
+  createPlanForSite,
 }: SitesTabProps) {
   return (
     <details className="site-summary-section collapsible-section" open>
@@ -377,6 +379,13 @@ export default function SitesTab({
                                   </div>
                                 </div>
                                 <div className="site-card-button-row">
+                                  <button
+                                    className="site-plan-button"
+                                    type="button"
+                                    onClick={() => createPlanForSite(card)}
+                                  >
+                                    ＋ 予定を追加
+                                  </button>
                                   {(resolvedAddress || card.coordinates) && (
                                     <a
                                       className="site-nav-link"
