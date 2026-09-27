@@ -75,8 +75,9 @@ import type {
   SummaryPeriod,
   SyncDashboard,
 } from "@/app/types";
+import { canonicalPersonnelName } from "@/app/lib/personnel";
 
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.5.1";
 const APP_UPDATED_AT = "2026年9月27日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -1028,7 +1029,7 @@ export default function Home() {
             row.coordinates ||
             "名称なし";
           sites.set(label, (sites.get(label) ?? 0) + 1);
-          splitNames(row.personnelNames)
+          [...new Set(splitNames(row.personnelNames).map(canonicalPersonnelName))]
             .filter(
               (name) => name.normalize("NFKC").replace(/\s+/g, "") !== "子野井",
             )

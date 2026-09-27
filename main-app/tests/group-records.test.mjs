@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { groupRecordsByDate, splitUpcomingRecords } from "../app/lib/group-records.ts";
+import { canonicalPersonnelName } from "../app/lib/personnel.ts";
 
 test("同じ日の3現場を一つの日付枠にまとめ、各予定を残す", () => {
   const entries = [
@@ -24,4 +25,10 @@ test("予定を今日・明日・それ以降に一度ずつ分ける", () => {
   ];
   const result = splitUpcomingRecords(records, "2026-09-19", "2026-09-20");
   assert.deepEqual(Object.values(result).flat().map((entry) => entry.site), ["今日", "明日", "以降"]);
+});
+
+test("作業者の呼び名を正式名にまとめる", () => {
+  assert.equal(canonicalPersonnelName("大貴くん"), "清田");
+  assert.equal(canonicalPersonnelName(" あっくん "), "坂口");
+  assert.equal(canonicalPersonnelName("下岸"), "下岸");
 });
