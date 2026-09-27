@@ -33,19 +33,35 @@ function numberOf(value: string) {
   return japaneseDigits[normalized];
 }
 
-function clock(hourText: string, minuteText = "", half = "") {
-  const hour = numberOf(hourText);
+function clock(hourText: string, minuteText = "", half = "", period = "") {
+  let hour = numberOf(hourText);
   const minute = half ? 30 : minuteText ? numberOf(minuteText) : 0;
+  if (["午後", "夕方", "夜"].includes(period) && hour < 12) hour += 12;
+  if (period === "午前" && hour === 12) hour = 0;
   if (!Number.isInteger(hour) || !Number.isInteger(minute) || hour < 0 || hour > 23 || minute < 0 || minute > 59) return undefined;
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
 function times(text: string) {
   const number = "([0-9０-９一二三四五六七八九十]{1,3})";
-  const matched = text.match(new RegExp(`${number}時(?:(?:${number}分)|(半))?(?:から|より|〜|~|-)${number}時(?:(?:${number}分)|(半))?(?:まで)?`));
-  if (matched) return { start: clock(matched[1], matched[2], matched[3]), end: clock(matched[4], matched[5], matched[6]) };
-  const colon = text.normalize("NFKC").match(/(\d{1,2}):([0-5]\d)(?:から|より|〜|~|-)(\d{1,2}):([0-5]\d)/);
-  return colon ? { start: clock(colon[1], colon[2]), end: clock(colon[3], colon[4]) } : {};
+  const period = "(午前|午後|朝|夕方|夜)?";
+  const matched = text.match(new RegExp(`${period}${number}時(?:(?:${number}分)|(半))?(?:から|より|〜|~|-)${period}${number}時(?:(?:${number}分)|(半))?(?:まで)?`));
+  if (matched) {
+    const start = clock(matched[2], matched[3], matched[4], matched[1]);
+    let end = clock(matched[6], matched[7], matched[8], matched[5]);
+    if (start && end && !matched[5] && Number(end.slice(0, 2)) <= Number(start.slice(0, 2)) && Number(end.slice(0, 2)) <= 7) {
+      end = `${String(Number(end.slice(0, 2)) + 12).padStart(2, "0")}:${end.slice(3)}`;
+    }
+    return { start, end };
+  }
+  const colon = text.normalize("NFKC").match(/(午前|午後|朝|夕方|夜)?(\d{1,2}):([0-5]\d)(?:から|より|〜|~|-)(午前|午後|朝|夕方|夜)?(\d{1,2}):([0-5]\d)/);
+  if (!colon) return {};
+  const start = clock(colon[2], colon[3], "", colon[1]);
+  let end = clock(colon[5], colon[6], "", colon[4]);
+  if (start && end && !colon[4] && Number(end.slice(0, 2)) <= Number(start.slice(0, 2)) && Number(end.slice(0, 2)) <= 7) {
+    end = `${String(Number(end.slice(0, 2)) + 12).padStart(2, "0")}:${end.slice(3)}`;
+  }
+  return { start, end };
 }
 
 export function parseVoiceDate(text: string, base = new Date()) {
@@ -73,6 +89,7 @@ export function parseAttendanceVoice(
   sites: VoiceSiteOption[],
   workers: string[],
   workOptions: string[],
+  baseDate = new Date(),
 ): AttendanceVoiceResult {
   const normalized = compact(transcript);
   const matchedSite = [...sites].sort((a, b) => b.site.length - a.site.length).find((option) => option.site && normalized.includes(compact(option.site)));
@@ -80,20 +97,28 @@ export function parseAttendanceVoice(
   const work = [...new Set(workOptions)].filter((name) => name && normalized.includes(compact(name)));
   const segments = transcript.split(/[、,。\n]+/).map((part) => part.trim()).filter(Boolean);
   const location = labelled(transcript, "場所") || labelled(transcript, "地域") || matchedSite?.location || segments.find((part) => /[都道府県市区町村郡]/.test(part) && !/時/.test(part));
-  const siteName = labelled(transcript, "現場名") || matchedSite?.site;
-  const type = normalized.includes("休み") ? "休み" : normalized.includes("半日") ? "半日" : normalized.includes("一日") || normalized.includes("1日") ? "1日" : undefined;
   const spokenTimes = times(transcript);
+  const inferredSite = segments.find((part) =>
+    /(?:現場|発電所|太陽光|様邸|邸|工場|会社|ビル|施設|公園|学校|寺|神社|ゴルフ場|造成地)$/.test(part) &&
+    !/時/.test(part) &&
+    part !== location,
+  );
+  const siteName = labelled(transcript, "現場名") || labelled(transcript, "現場") || matchedSite?.site || inferredSite;
+  const type = normalized.includes("休み") ? "休み" : normalized.includes("半日") ? "半日" : normalized.includes("一日") || normalized.includes("1日") || (spokenTimes.start && spokenTimes.end) ? "1日" : undefined;
+  const labelledWorkers = labelled(transcript, "作業者");
+  const labelledWork = labelled(transcript, "作業内容") || labelled(transcript, "作業");
+  const date = parseVoiceDate(transcript, baseDate);
   return {
     transcript,
-    ...(parseVoiceDate(transcript) ? { date: parseVoiceDate(transcript) } : {}),
+    ...(date ? { date } : {}),
     ...(type ? { type } : {}),
     ...(normalized.includes("出張") ? { businessTrip: true } : {}),
     ...(matchedSite ? { site: matchedSite } : {}),
     ...(siteName ? { siteName } : {}),
     ...(location ? { location } : {}),
     ...spokenTimes,
-    ...(knownWorkers.length ? { personnelNames: knownWorkers.join("、") } : {}),
-    ...(work.length ? { work } : {}),
+    ...(knownWorkers.length || labelledWorkers ? { personnelNames: knownWorkers.length ? knownWorkers.join("、") : labelledWorkers } : {}),
+    ...(work.length || labelledWork ? { work: work.length ? work : labelledWork?.split(/[・、,，]/).map((item) => item.trim()).filter(Boolean) } : {}),
   };
 }
 

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import {
   SITE_SEPARATOR,
   elapsedDays,
@@ -130,11 +130,24 @@ export default function EntryTab({
   const [voiceResult, setVoiceResult] = useState<AttendanceVoiceResult | null>(null);
   const [voiceMessage, setVoiceMessage] = useState("");
   const [voiceListening, setVoiceListening] = useState(false);
+  const [voiceSupported, setVoiceSupported] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const speechWindow = window as typeof window & {
+        SpeechRecognition?: unknown;
+        webkitSpeechRecognition?: unknown;
+      };
+      setVoiceSupported(Boolean(speechWindow.SpeechRecognition ?? speechWindow.webkitSpeechRecognition));
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const parseVoice = (text: string) => {
     const result = parseAttendanceVoice(text, voiceSiteOptions, knownPersonnelNames, knownWorkOptions);
     setVoiceResult(result);
-    setVoiceMessage(nextAssistantQuestion(result));
+    const lines = voiceResultLines(result);
+    setVoiceMessage(lines.length ? nextAssistantQuestion(result) : "内容を読み取れませんでした。日付、現場、時間などを区切って入力してください");
   };
 
   const listen = () => {
@@ -143,8 +156,9 @@ export default function EntryTab({
       interimResults: boolean;
       continuous: boolean;
       onresult: ((event: { results: ArrayLike<{ 0: { transcript: string } }> }) => void) | null;
-      onerror: (() => void) | null;
+      onerror: ((event: { error?: string }) => void) | null;
       onend: (() => void) | null;
+      onstart: (() => void) | null;
       start(): void;
     };
     const speechWindow = window as typeof window & {
@@ -160,16 +174,32 @@ export default function EntryTab({
     recognition.lang = "ja-JP";
     recognition.interimResults = false;
     recognition.continuous = false;
+    recognition.onstart = () => setVoiceMessage("聞き取り中です。予定をまとめて話してください…");
     recognition.onresult = (event) => {
       const transcript = event.results[0]?.[0]?.transcript?.trim() ?? "";
       const combined = [voiceText, transcript].filter(Boolean).join("、");
       setVoiceText(combined);
       parseVoice(combined);
     };
-    recognition.onerror = () => setVoiceMessage("音声を認識できませんでした。もう一度お試しください");
+    recognition.onerror = (event) => {
+      const messages: Record<string, string> = {
+        "not-allowed": "マイクが許可されていません。ブラウザの設定でマイクを許可するか、入力欄でiPhoneキーボードの🎤を使ってください",
+        "service-not-allowed": "このブラウザでは音声認識を利用できません。入力欄でiPhoneキーボードの🎤を使ってください",
+        "audio-capture": "マイクを利用できません。端末のマイク設定を確認してください",
+        "no-speech": "音声が聞き取れませんでした。マイクに近づいてもう一度お試しください",
+        network: "音声認識の通信に失敗しました。入力欄でキーボードの🎤を使う方法も利用できます",
+        aborted: "音声入力を中止しました",
+      };
+      setVoiceMessage(messages[event.error ?? ""] ?? `音声を認識できませんでした（${event.error || "原因不明"}）`);
+    };
     recognition.onend = () => setVoiceListening(false);
     setVoiceListening(true);
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setVoiceListening(false);
+      setVoiceMessage("音声入力を開始できませんでした。少し待ってから再度お試しください");
+    }
   };
 
   const replaceFirst = (value: string, next: string | undefined) => {
@@ -235,21 +265,29 @@ export default function EntryTab({
       <details className="voice-assistant-panel">
         <summary>🎙️ 音声アシスタント・まとめて音声入力</summary>
         <div className="voice-assistant-content">
-          <p>例：「明日、鹿児島市、霧島太陽光発電所、8時から17時、子野井、草刈り、出張」</p>
+          <div className="voice-input-steps">
+            <strong>① 話す・文章を入力 → ② 内容を確認 → ③ フォームへ反映</strong>
+            <span>iPhoneで直接録音が動かない場合は、下の入力欄をタップしてキーボードの🎤から話してください。</span>
+          </div>
+          <p>例：「明日、鹿児島市、霧島太陽光発電所、朝8時から夕方5時、子野井、草刈り、出張」</p>
           <textarea
             value={voiceText}
-            onChange={(event) => setVoiceText(event.target.value)}
+            onChange={(event) => {
+              setVoiceText(event.target.value);
+              setVoiceResult(null);
+            }}
             placeholder="予定を話すか、文字でまとめて入力してください"
+            enterKeyHint="done"
           />
           <div className="voice-assistant-actions">
-            <button type="button" onClick={listen} disabled={voiceListening}>
-              {voiceListening ? "聞き取り中…" : "🎤 音声で入力"}
+            <button type="button" onClick={listen} disabled={voiceListening || voiceSupported === false}>
+              {voiceListening ? "聞き取り中…" : voiceSupported === false ? "直接録音は非対応" : "🎤 音声で入力"}
             </button>
             <button type="button" onClick={() => parseVoice(voiceText)} disabled={!voiceText.trim()}>
-              内容を確認
+              ② 内容を確認
             </button>
             <button type="button" className="primary" onClick={applyVoiceResult} disabled={!voiceResult}>
-              フォームへ反映
+              ③ フォームへ反映
             </button>
           </div>
           {voiceResult && (
