@@ -36,6 +36,7 @@ type SummaryTabProps = {
     extra: number;
     weeklyExtra: number;
     tripAllowance: number;
+    selfDinnerAllowance: number;
     customAllowances: { id: string; name: string; amount: number }[];
     total: number;
     deductions: { key: string; name: string; monthly: number; amount: number }[];
@@ -339,6 +340,11 @@ export default function SummaryTab({
                 出張手当 ¥{estimatedPay.tripAllowance.toLocaleString("ja-JP")}
               </span>
             )}
+            {estimatedPay.selfDinnerAllowance > 0 && (
+              <span>
+                自費食事分の出張手当 ¥{estimatedPay.selfDinnerAllowance.toLocaleString("ja-JP")}
+              </span>
+            )}
             {estimatedPay.customAllowances.map((allowance) => (
               <span key={allowance.id}>
                 {allowance.name} ¥{allowance.amount.toLocaleString("ja-JP")}
@@ -515,7 +521,6 @@ export default function SummaryTab({
                 ["healthInsurance", "健康保険"],
                 ["pension", "厚生年金"],
                 ["employmentInsurance", "雇用保険"],
-                ["incomeTax", "所得税"],
                 ["residentTax", "住民税"],
                 ["otherDeductions", "その他控除"],
               ] as const).map(([key, label]) => (
@@ -538,9 +543,62 @@ export default function SummaryTab({
                   </div>
                 </label>
               ))}
+              <div className="income-tax-settings">
+                <label className="income-tax-auto-toggle">
+                  <input
+                    type="checkbox"
+                    checked={paySettings.autoIncomeTax}
+                    onChange={(event) => updatePaySettings({
+                      ...paySettings,
+                      autoIncomeTax: event.target.checked,
+                    })}
+                  />
+                  <span>所得税を自動計算する</span>
+                </label>
+                {paySettings.autoIncomeTax ? (
+                  <label>
+                    <span>扶養親族等の数</span>
+                    <div className="pay-input-wrap">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        max="20"
+                        step="1"
+                        value={paySettings.incomeTaxDependents}
+                        onChange={(event) => updatePaySettings({
+                          ...paySettings,
+                          incomeTaxDependents: event.target.value,
+                        })}
+                      />
+                      <b>人</b>
+                    </div>
+                    <small>源泉控除対象配偶者・親族などの合計。本人は含めません</small>
+                  </label>
+                ) : (
+                  <label>
+                    <span>所得税（手入力）</span>
+                    <div className="pay-input-wrap">
+                      <b>¥</b>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        step="100"
+                        placeholder="0"
+                        value={paySettings.incomeTax}
+                        onChange={(event) => updatePaySettings({
+                          ...paySettings,
+                          incomeTax: event.target.value,
+                        })}
+                      />
+                    </div>
+                  </label>
+                )}
+              </div>
             </div>
             <p>
-              計算：支給額から登録した健康保険・厚生年金・雇用保険・所得税・住民税・その他控除を差し引きます。年間集計では、勤務実績がある月数分の月額控除を計算します。実際の給与明細と差が出る場合があります。
+              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。支給額から社会保険料等を差し引き、扶養親族等の数を反映します。年間集計は月平均額による概算のため、実際の給与明細・年末調整と差が出る場合があります。
             </p>
           </div>
         </details>

@@ -85,6 +85,10 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /健康保険/);
   assert.match(summary, /厚生年金/);
   assert.match(types, /residentTax: string/);
+  assert.match(page, /estimateMonthlyIncomeTax/);
+  assert.match(page, /summary\.selfDinner \* 1_500/);
+  assert.match(summary, /自費食事分の出張手当/);
+  assert.match(summary, /所得税を自動計算する/);
 });
 
 test("separates regular workers and supporters and carries site addresses into plans", async () => {
@@ -102,10 +106,10 @@ test("separates regular workers and supporters and carries site addresses into p
 });
 
 test("keeps schedule site names readable on narrow screens", async () => {
-  const styles = await readFile(
-    new URL("../app/globals.css", import.meta.url),
-    "utf8",
-  );
+  const [styles, historyPlans] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/HistoryPlansTab.tsx", import.meta.url), "utf8"),
+  ]);
   assert.match(
     styles,
     /\.history-item:has\(\.plan-select\) \.record-extra\s*\{\s*grid-column:\s*1;/,
@@ -114,4 +118,6 @@ test("keeps schedule site names readable on narrow screens", async () => {
     styles,
     /\.record-site > p\s*\{[\s\S]*?word-break:\s*keep-all;[\s\S]*?overflow-wrap:\s*break-word;/,
   );
+  assert.match(historyPlans, /planEnded[\s\S]*?isPlanEnded\(entry\.date/);
+  assert.doesNotMatch(historyPlans, /groupPlanCount\s*>\s*1\s*&&\s*isPlanEnded/);
 });

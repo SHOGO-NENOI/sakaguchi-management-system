@@ -306,7 +306,6 @@ export default function HistoryPlansTab({
             const endTimes = entry.end.split(SITE_SEPARATOR);
             const planEnded =
               activeTab === "plans" &&
-              groupPlanCount > 1 &&
               isPlanEnded(entry.date, endTimes, currentDate, currentTime);
             const workColor =
               entry.type === "休み"

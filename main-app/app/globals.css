@@ -6203,6 +6203,28 @@ html body .history-list .completed-badge {
   font-weight: 800;
   line-height: 1.2;
 }
+.income-tax-settings {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+.income-tax-settings .income-tax-auto-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.income-tax-auto-toggle input { width: 18px; height: 18px; }
+.income-tax-settings label > small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
 
 /* 現場共有アプリと同じ5段階。端末幅によらず選択した倍率を適用する。 */
 html[data-font-size="small"] { font-size: 13px; }

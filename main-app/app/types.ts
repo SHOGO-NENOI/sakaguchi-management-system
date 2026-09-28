@@ -53,6 +53,8 @@ export type PaySettings = {
   healthInsurance: string;
   pension: string;
   employmentInsurance: string;
+  autoIncomeTax: boolean;
+  incomeTaxDependents: string;
   incomeTax: string;
   residentTax: string;
   otherDeductions: string;

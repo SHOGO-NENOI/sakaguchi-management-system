@@ -76,8 +76,9 @@ import type {
   SyncDashboard,
 } from "@/app/types";
 import { canonicalPersonnelName } from "@/app/lib/personnel";
+import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 
-const APP_VERSION = "2.5.3";
+const APP_VERSION = "2.5.4";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -91,6 +92,8 @@ const defaultPaySettings: PaySettings = {
   healthInsurance: "",
   pension: "",
   employmentInsurance: "",
+  autoIncomeTax: true,
+  incomeTaxDependents: "0",
   incomeTax: "",
   residentTax: "",
   otherDeductions: "",
@@ -940,6 +943,7 @@ export default function Home() {
     const tripAllowance = Math.round(
       summary.trips * (tripAllowancePerDay || 0),
     );
+    const selfDinnerAllowance = Math.round(summary.selfDinner * 1_500);
     const customAllowances = paySettings.customAllowances
       .filter((allowance) => allowance.name.trim() && Number(allowance.amount))
       .map((allowance) => ({
@@ -955,13 +959,30 @@ export default function Home() {
       0,
     );
     const gross =
-      base + dailyExtra + weeklyExtra + tripAllowance + customAllowanceTotal;
+      base +
+      dailyExtra +
+      weeklyExtra +
+      tripAllowance +
+      selfDinnerAllowance +
+      customAllowanceTotal;
     const deductionMonths = summaryPeriod === "annual" ? workedMonthCount : summary.days > 0 ? 1 : 0;
+    const healthInsurance = Math.max(0, Number(paySettings.healthInsurance) || 0);
+    const pension = Math.max(0, Number(paySettings.pension) || 0);
+    const employmentInsurance = Math.max(0, Number(paySettings.employmentInsurance) || 0);
+    const monthlySocialInsurance = healthInsurance + pension + employmentInsurance;
+    const averageMonthlyGross = deductionMonths > 0 ? gross / deductionMonths : 0;
+    const incomeTax = paySettings.autoIncomeTax
+      ? estimateMonthlyIncomeTax(
+          averageMonthlyGross,
+          monthlySocialInsurance,
+          Number(paySettings.incomeTaxDependents) || 0,
+        )
+      : Math.max(0, Number(paySettings.incomeTax) || 0);
     const deductions = [
-      { key: "healthInsurance", name: "健康保険", monthly: Math.max(0, Number(paySettings.healthInsurance) || 0) },
-      { key: "pension", name: "厚生年金", monthly: Math.max(0, Number(paySettings.pension) || 0) },
-      { key: "employmentInsurance", name: "雇用保険", monthly: Math.max(0, Number(paySettings.employmentInsurance) || 0) },
-      { key: "incomeTax", name: "所得税", monthly: Math.max(0, Number(paySettings.incomeTax) || 0) },
+      { key: "healthInsurance", name: "健康保険", monthly: healthInsurance },
+      { key: "pension", name: "厚生年金", monthly: pension },
+      { key: "employmentInsurance", name: "雇用保険", monthly: employmentInsurance },
+      { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動概算）" : "所得税", monthly: incomeTax },
       { key: "residentTax", name: "住民税", monthly: Math.max(0, Number(paySettings.residentTax) || 0) },
       { key: "otherDeductions", name: "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
     ].map((deduction) => ({
@@ -977,6 +998,7 @@ export default function Home() {
       extra: dailyExtra,
       weeklyExtra,
       tripAllowance,
+      selfDinnerAllowance,
       customAllowances,
       total: gross,
       deductions,
@@ -989,6 +1011,7 @@ export default function Home() {
     summary.early,
     summary.overtime,
     summary.trips,
+    summary.selfDinner,
     weeklyOvertimeMinutes,
     workedMonthCount,
     summaryPeriod,
