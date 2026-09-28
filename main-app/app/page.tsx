@@ -77,8 +77,9 @@ import type {
 } from "@/app/types";
 import { canonicalPersonnelName } from "@/app/lib/personnel";
 import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
+import { estimateKumamotoResidentTax } from "@/app/lib/resident-tax";
 
-const APP_VERSION = "2.5.5";
+const APP_VERSION = "2.5.6";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -95,6 +96,9 @@ const defaultPaySettings: PaySettings = {
   autoIncomeTax: true,
   incomeTaxDependents: "0",
   incomeTax: "",
+  autoResidentTax: true,
+  residentTaxAnnualIncome: "",
+  residentTaxDependents: "0",
   residentTax: "",
   otherDeductions: "",
 };
@@ -978,12 +982,20 @@ export default function Home() {
           Number(paySettings.incomeTaxDependents) || 0,
         )
       : Math.max(0, Number(paySettings.incomeTax) || 0);
+    const residentTaxEstimate = estimateKumamotoResidentTax(
+      Number(paySettings.residentTaxAnnualIncome) || 0,
+      monthlySocialInsurance * 12,
+      Number(paySettings.residentTaxDependents) || 0,
+    );
+    const residentTax = paySettings.autoResidentTax
+      ? residentTaxEstimate.monthly
+      : Math.max(0, Number(paySettings.residentTax) || 0);
     const deductions = [
       { key: "healthInsurance", name: "健康保険", monthly: healthInsurance },
       { key: "pension", name: "厚生年金", monthly: pension },
       { key: "employmentInsurance", name: "雇用保険", monthly: employmentInsurance },
       { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動概算）" : "所得税", monthly: incomeTax },
-      { key: "residentTax", name: "住民税", monthly: Math.max(0, Number(paySettings.residentTax) || 0) },
+      { key: "residentTax", name: paySettings.autoResidentTax ? "熊本市住民税（自動概算）" : "住民税", monthly: residentTax },
       { key: "otherDeductions", name: "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
     ].map((deduction) => ({
       ...deduction,

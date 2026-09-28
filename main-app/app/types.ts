@@ -56,6 +56,9 @@ export type PaySettings = {
   autoIncomeTax: boolean;
   incomeTaxDependents: string;
   incomeTax: string;
+  autoResidentTax: boolean;
+  residentTaxAnnualIncome: string;
+  residentTaxDependents: string;
   residentTax: string;
   otherDeductions: string;
 };

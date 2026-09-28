@@ -89,6 +89,10 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(page, /summary\.selfDinner \* 1_500/);
   assert.match(summary, /自費食事分の出張手当/);
   assert.match(summary, /所得税を自動計算する/);
+  assert.match(page, /estimateKumamotoResidentTax/);
+  assert.match(summary, /熊本市の住民税を自動計算する/);
+  assert.match(summary, /前年の給与年収/);
+  assert.match(summary, /扶養人数（16歳以上）/);
 });
 
 test("separates regular workers and supporters and carries site addresses into plans", async () => {

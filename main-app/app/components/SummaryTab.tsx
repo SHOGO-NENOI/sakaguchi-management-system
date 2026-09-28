@@ -521,7 +521,6 @@ export default function SummaryTab({
                 ["healthInsurance", "健康保険"],
                 ["pension", "厚生年金"],
                 ["employmentInsurance", "雇用保険"],
-                ["residentTax", "住民税"],
                 ["otherDeductions", "その他控除"],
               ] as const).map(([key, label]) => (
                 <label key={key}>
@@ -596,9 +595,81 @@ export default function SummaryTab({
                   </label>
                 )}
               </div>
+              <div className="resident-tax-settings">
+                <label className="income-tax-auto-toggle">
+                  <input
+                    type="checkbox"
+                    checked={paySettings.autoResidentTax}
+                    onChange={(event) => updatePaySettings({
+                      ...paySettings,
+                      autoResidentTax: event.target.checked,
+                    })}
+                  />
+                  <span>熊本市の住民税を自動計算する</span>
+                </label>
+                {paySettings.autoResidentTax ? (
+                  <>
+                    <label>
+                      <span>前年の給与年収</span>
+                      <div className="pay-input-wrap">
+                        <b>¥</b>
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          step="10000"
+                          placeholder="例：4000000"
+                          value={paySettings.residentTaxAnnualIncome}
+                          onChange={(event) => updatePaySettings({
+                            ...paySettings,
+                            residentTaxAnnualIncome: event.target.value,
+                          })}
+                        />
+                      </div>
+                    </label>
+                    <label>
+                      <span>扶養人数（16歳以上）</span>
+                      <div className="pay-input-wrap">
+                        <input
+                          type="number"
+                          inputMode="numeric"
+                          min="0"
+                          max="20"
+                          step="1"
+                          value={paySettings.residentTaxDependents}
+                          onChange={(event) => updatePaySettings({
+                            ...paySettings,
+                            residentTaxDependents: event.target.value,
+                          })}
+                        />
+                        <b>人</b>
+                      </div>
+                    </label>
+                  </>
+                ) : (
+                  <label>
+                    <span>住民税（月額・手入力）</span>
+                    <div className="pay-input-wrap">
+                      <b>¥</b>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        step="100"
+                        placeholder="0"
+                        value={paySettings.residentTax}
+                        onChange={(event) => updatePaySettings({
+                          ...paySettings,
+                          residentTax: event.target.value,
+                        })}
+                      />
+                    </div>
+                  </label>
+                )}
+              </div>
             </div>
             <p>
-              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。支給額から社会保険料等を差し引き、扶養親族等の数を反映します。年間集計は月平均額による概算のため、実際の給与明細・年末調整と差が出る場合があります。
+              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。配偶者控除、特定扶養、生命保険料控除、住宅ローン控除などは含まないため、実際の税額通知と差が出る場合があります。
             </p>
           </div>
         </details>
