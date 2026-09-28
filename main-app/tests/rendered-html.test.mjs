@@ -120,4 +120,5 @@ test("keeps schedule site names readable on narrow screens", async () => {
   );
   assert.match(historyPlans, /planEnded[\s\S]*?isPlanEnded\(entry\.date/);
   assert.doesNotMatch(historyPlans, /groupPlanCount\s*>\s*1\s*&&\s*isPlanEnded/);
+  assert.match(styles, /\.history-item\.plan-ended\s*\{[\s\S]*?background-color:\s*#dce7e3\s*!important;/);
 });

@@ -78,7 +78,7 @@ import type {
 import { canonicalPersonnelName } from "@/app/lib/personnel";
 import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 
-const APP_VERSION = "2.5.4";
+const APP_VERSION = "2.5.5";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
