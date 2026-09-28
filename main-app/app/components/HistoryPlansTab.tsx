@@ -1,4 +1,4 @@
-import type { Dispatch, SetStateAction } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { groupRecordsByDate } from "@/app/lib/group-records";
 import {
   SITE_SEPARATOR,
@@ -14,6 +14,7 @@ import {
   today,
 } from "@/app/lib/entry-helpers";
 import type { AppTab, Entry, SiteDocument } from "@/app/types";
+import { isPlanEnded } from "@/app/lib/schedule-visibility";
 
 type PlanSection = { id: string; title: string; date: string; entries: Entry[] };
 type CalendarDay = { day: number; date: string; entries: Entry[] } | null;
@@ -67,6 +68,18 @@ export default function HistoryPlansTab({
   loadSiteDocuments,
   remove,
 }: HistoryPlansTabProps) {
+  const [clockTick, setClockTick] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setClockTick(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const currentTime = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Tokyo",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(clockTick);
+  const currentDate = today();
   return (
     <section className="history-section">
       <div className="section-heading history-heading">
@@ -270,8 +283,10 @@ export default function HistoryPlansTab({
               )}
               {section.entries.length ? (
         <div className="history-list">
-          {groupRecordsByDate(section.entries).map((group) => (
-            <section className="history-day" key={group.date} aria-label={`${formatDate(group.date)}の${activeTab === "plans" ? "予定" : "勤務記録"} ${group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件`}>
+          {groupRecordsByDate(section.entries).map((group) => {
+            const groupPlanCount = group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0);
+            return (
+            <section className="history-day" key={group.date} aria-label={`${formatDate(group.date)}の${activeTab === "plans" ? "予定" : "勤務記録"} ${groupPlanCount}件`}>
               <div className="date-block">
                 <strong>
                   {formatDate(group.date).split("(")[0]}
@@ -280,7 +295,7 @@ export default function HistoryPlansTab({
                   )}
                 </strong>
                 <span>{formatDate(group.date).match(/\((.+)\)/)?.[1]}</span>
-                {group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0) > 1 && <small>{group.entries.reduce((total, entry) => total + (entry.type === "休み" ? 1 : Math.max(1, entrySiteRows(entry).length)), 0)}件</small>}
+                {groupPlanCount > 1 && <small>{groupPlanCount}件</small>}
               </div>
               <div className="history-day-entries">
           {group.entries.map((entry) => {
@@ -289,6 +304,10 @@ export default function HistoryPlansTab({
             const siteRows = entry.type === "休み" ? [] : entrySiteRows(entry);
             const startTimes = entry.start.split(SITE_SEPARATOR);
             const endTimes = entry.end.split(SITE_SEPARATOR);
+            const planEnded =
+              activeTab === "plans" &&
+              groupPlanCount > 1 &&
+              isPlanEnded(entry.date, endTimes, currentDate, currentTime);
             const workColor =
               entry.type === "休み"
                 ? "work-off"
@@ -297,7 +316,7 @@ export default function HistoryPlansTab({
                   : "work-normal";
             return (
               <article
-                className={`history-item ${planned ? "planned" : ""} ${workColor} ${selectedPlanIds.includes(entry.id) ? "selected" : ""}`}
+                className={`history-item ${planned ? "planned" : ""} ${planEnded ? "plan-ended" : ""} ${workColor} ${selectedPlanIds.includes(entry.id) ? "selected" : ""}`}
                 key={entry.id}
               >
                 {activeTab === "plans" && (
@@ -320,6 +339,9 @@ export default function HistoryPlansTab({
                   <div className="record-top">
                     {planned && (
                       <span className="planned-badge">予定</span>
+                    )}
+                    {planEnded && (
+                      <span className="completed-badge">終了</span>
                     )}
                     <span className={`type-badge type-${entry.type}`}>
                       {entry.type}
@@ -399,7 +421,7 @@ export default function HistoryPlansTab({
           })}
               </div>
             </section>
-          ))}
+          );})}
         </div>
               ) : activeTab === "plans" && (
                 <div className="plan-panel-empty">予定はありません</div>

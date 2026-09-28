@@ -6187,6 +6187,22 @@ html body .history-list .history-day .record-site > p {
   word-break: keep-all;
   overflow-wrap: break-word;
 }
+html body .plan-panel .history-list .history-item.plan-ended {
+  padding: 6px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--muted) 16%, var(--paper));
+  box-shadow: inset 4px 0 0 color-mix(in srgb, var(--muted) 72%, var(--green));
+}
+html body .history-list .completed-badge {
+  padding: 1px 5px;
+  border: 1px solid color-mix(in srgb, var(--muted) 70%, var(--line));
+  border-radius: 999px;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--muted) 20%, var(--paper));
+  font-size: 0.68rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
 
 /* 現場共有アプリと同じ5段階。端末幅によらず選択した倍率を適用する。 */
 html[data-font-size="small"] { font-size: 13px; }
