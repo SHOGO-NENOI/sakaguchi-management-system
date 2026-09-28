@@ -77,8 +77,8 @@ import type {
 } from "@/app/types";
 import { canonicalPersonnelName } from "@/app/lib/personnel";
 
-const APP_VERSION = "2.5.1";
-const APP_UPDATED_AT = "2026年9月27日";
+const APP_VERSION = "2.5.2";
+const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];

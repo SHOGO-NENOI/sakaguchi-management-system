@@ -6179,6 +6179,15 @@ html body .history-list .record-site .record-map-link { background: #2771cb; bor
 }
 .record-materials-content a { color: var(--green); }
 
+/* 予定カードは現場名の幅を優先し、補足情報で不要な列を作らない。 */
+html body .history-list .history-day .history-item:has(.plan-select) .record-extra {
+  grid-column: 1;
+}
+html body .history-list .history-day .record-site > p {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
 /* 現場共有アプリと同じ5段階。端末幅によらず選択した倍率を適用する。 */
 html[data-font-size="small"] { font-size: 13px; }
 html[data-font-size="standard"] { font-size: 15px; }

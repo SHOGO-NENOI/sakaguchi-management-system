@@ -100,3 +100,18 @@ test("separates regular workers and supporters and carries site addresses into p
   assert.match(entryTab, />応援者</);
   assert.match(sitesTab, /＋ 予定を追加/);
 });
+
+test("keeps schedule site names readable on narrow screens", async () => {
+  const styles = await readFile(
+    new URL("../app/globals.css", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    styles,
+    /\.history-item:has\(\.plan-select\) \.record-extra\s*\{\s*grid-column:\s*1;/,
+  );
+  assert.match(
+    styles,
+    /\.record-site > p\s*\{[\s\S]*?word-break:\s*keep-all;[\s\S]*?overflow-wrap:\s*break-word;/,
+  );
+});
