@@ -1799,6 +1799,7 @@ textarea {
 .pay-deductions-heading strong { color: var(--ink); font-size: 11px; }
 .pay-deductions-heading small { color: var(--muted); font-size: 9px; }
 .income-tax-settings,
+.employment-insurance-settings,
 .resident-tax-settings {
   grid-column: 1/-1;
   display: grid;
@@ -4105,6 +4106,7 @@ footer {
   }
   .pay-deductions-settings { grid-template-columns: 1fr; }
   .income-tax-settings,
+  .employment-insurance-settings,
   .resident-tax-settings { grid-template-columns: 1fr; }
   .pay-deductions-heading { grid-column: auto; }
   .pay-settings p {
@@ -6263,6 +6265,7 @@ html body .history-list .completed-badge {
   line-height: 1.2;
 }
 .income-tax-settings,
+.employment-insurance-settings,
 .resident-tax-settings {
   grid-column: 1 / -1;
   display: grid;
@@ -6273,7 +6276,18 @@ html body .history-list .completed-badge {
   border-radius: 10px;
   background: var(--soft);
 }
+.employment-insurance-settings select {
+  width: 100%;
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink);
+  background: var(--paper);
+  font: inherit;
+}
 .income-tax-settings .income-tax-auto-toggle,
+.employment-insurance-settings .income-tax-auto-toggle,
 .resident-tax-settings .income-tax-auto-toggle {
   display: flex;
   align-items: center;
@@ -6281,6 +6295,7 @@ html body .history-list .completed-badge {
 }
 .income-tax-auto-toggle input { width: 18px; height: 18px; }
 .income-tax-settings label > small,
+.employment-insurance-settings label > small,
 .resident-tax-settings label > small {
   display: block;
   margin-top: 4px;
@@ -6290,6 +6305,7 @@ html body .history-list .completed-badge {
 }
 @media (max-width: 720px) {
   .income-tax-settings,
+  .employment-insurance-settings,
   .resident-tax-settings {
     grid-template-columns: 1fr;
   }

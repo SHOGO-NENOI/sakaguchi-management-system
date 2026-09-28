@@ -93,6 +93,10 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /熊本市の住民税を自動計算する/);
   assert.match(summary, /前年の給与年収/);
   assert.match(summary, /扶養人数（16歳以上）/);
+  assert.match(page, /estimateEmploymentInsurance/);
+  assert.match(summary, /雇用保険料を自動計算する/);
+  assert.match(summary, /一般の事業（0\.5％）/);
+  assert.match(summary, /建設・農林水産・清酒製造（0\.6％）/);
   assert.match(summary, /summary\.overtime \+ weeklyOvertimeMinutes/);
   assert.match(summary, /週40時間超過/);
 });

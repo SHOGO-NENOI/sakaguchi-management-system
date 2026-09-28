@@ -52,6 +52,8 @@ export type PaySettings = {
   customAllowances: CustomAllowance[];
   healthInsurance: string;
   pension: string;
+  autoEmploymentInsurance: boolean;
+  employmentInsuranceCategory: "general" | "special";
   employmentInsurance: string;
   autoIncomeTax: boolean;
   incomeTaxDependents: string;

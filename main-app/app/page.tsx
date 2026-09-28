@@ -79,8 +79,9 @@ import { canonicalPersonnelName } from "@/app/lib/personnel";
 import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 import { estimateKumamotoResidentTax } from "@/app/lib/resident-tax";
 import { calculateWeeklyOvertimeMinutes } from "@/app/lib/overtime";
+import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 
-const APP_VERSION = "2.5.7";
+const APP_VERSION = "2.5.8";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -93,6 +94,8 @@ const defaultPaySettings: PaySettings = {
   customAllowances: [],
   healthInsurance: "",
   pension: "",
+  autoEmploymentInsurance: true,
+  employmentInsuranceCategory: "general",
   employmentInsurance: "",
   autoIncomeTax: true,
   incomeTaxDependents: "0",
@@ -966,9 +969,14 @@ export default function Home() {
     const deductionMonths = summaryPeriod === "annual" ? workedMonthCount : summary.days > 0 ? 1 : 0;
     const healthInsurance = Math.max(0, Number(paySettings.healthInsurance) || 0);
     const pension = Math.max(0, Number(paySettings.pension) || 0);
-    const employmentInsurance = Math.max(0, Number(paySettings.employmentInsurance) || 0);
-    const monthlySocialInsurance = healthInsurance + pension + employmentInsurance;
     const averageMonthlyGross = deductionMonths > 0 ? gross / deductionMonths : 0;
+    const employmentInsurance = paySettings.autoEmploymentInsurance
+      ? estimateEmploymentInsurance(
+          averageMonthlyGross,
+          paySettings.employmentInsuranceCategory,
+        )
+      : Math.max(0, Number(paySettings.employmentInsurance) || 0);
+    const monthlySocialInsurance = healthInsurance + pension + employmentInsurance;
     const incomeTax = paySettings.autoIncomeTax
       ? estimateMonthlyIncomeTax(
           averageMonthlyGross,
@@ -987,7 +995,7 @@ export default function Home() {
     const deductions = [
       { key: "healthInsurance", name: "健康保険", monthly: healthInsurance },
       { key: "pension", name: "厚生年金", monthly: pension },
-      { key: "employmentInsurance", name: "雇用保険", monthly: employmentInsurance },
+      { key: "employmentInsurance", name: paySettings.autoEmploymentInsurance ? "雇用保険（自動計算）" : "雇用保険", monthly: employmentInsurance },
       { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動概算）" : "所得税", monthly: incomeTax },
       { key: "residentTax", name: paySettings.autoResidentTax ? "熊本市住民税（自動概算）" : "住民税", monthly: residentTax },
       { key: "otherDeductions", name: "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },

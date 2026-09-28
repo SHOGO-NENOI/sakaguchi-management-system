@@ -527,7 +527,6 @@ export default function SummaryTab({
               {([
                 ["healthInsurance", "健康保険"],
                 ["pension", "厚生年金"],
-                ["employmentInsurance", "雇用保険"],
                 ["otherDeductions", "その他控除"],
               ] as const).map(([key, label]) => (
                 <label key={key}>
@@ -549,6 +548,53 @@ export default function SummaryTab({
                   </div>
                 </label>
               ))}
+              <div className="employment-insurance-settings">
+                <label className="income-tax-auto-toggle">
+                  <input
+                    type="checkbox"
+                    checked={paySettings.autoEmploymentInsurance}
+                    onChange={(event) => updatePaySettings({
+                      ...paySettings,
+                      autoEmploymentInsurance: event.target.checked,
+                    })}
+                  />
+                  <span>雇用保険料を自動計算する</span>
+                </label>
+                {paySettings.autoEmploymentInsurance ? (
+                  <label>
+                    <span>事業の種類</span>
+                    <select
+                      value={paySettings.employmentInsuranceCategory}
+                      onChange={(event) => updatePaySettings({
+                        ...paySettings,
+                        employmentInsuranceCategory: event.target.value as "general" | "special",
+                      })}
+                    >
+                      <option value="general">一般の事業（0.5％）</option>
+                      <option value="special">建設・農林水産・清酒製造（0.6％）</option>
+                    </select>
+                  </label>
+                ) : (
+                  <label>
+                    <span>雇用保険料（月額・手入力）</span>
+                    <div className="pay-input-wrap">
+                      <b>¥</b>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min="0"
+                        step="100"
+                        placeholder="0"
+                        value={paySettings.employmentInsurance}
+                        onChange={(event) => updatePaySettings({
+                          ...paySettings,
+                          employmentInsurance: event.target.value,
+                        })}
+                      />
+                    </div>
+                  </label>
+                )}
+              </div>
               <div className="income-tax-settings">
                 <label className="income-tax-auto-toggle">
                   <input
@@ -676,7 +722,7 @@ export default function SummaryTab({
               </div>
             </div>
             <p>
-              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。配偶者控除、特定扶養、生命保険料控除、住宅ローン控除などは含まないため、実際の税額通知と差が出る場合があります。
+              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
             </p>
           </div>
         </details>
