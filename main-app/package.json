@@ -10,7 +10,7 @@
     "dev": "node scripts/run-local.mjs vite",
     "build": "node scripts/build-verified.mjs",
     "start": "node scripts/run-local.mjs vinext start",
-    "test": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/group-records.test.mjs tests/schedule-visibility.test.mjs tests/voice-parser.test.mjs tests/income-tax.test.mjs tests/resident-tax.test.mjs",
+    "test": "npm run build && node --experimental-strip-types --test tests/rendered-html.test.mjs tests/group-records.test.mjs tests/schedule-visibility.test.mjs tests/voice-parser.test.mjs tests/income-tax.test.mjs tests/resident-tax.test.mjs tests/overtime.test.mjs",
     "validate:artifact": "node scripts/validate-artifact.mjs",
     "lint": "node scripts/run-local.mjs eslint . --ignore-pattern dist --ignore-pattern .next",
     "typecheck": "node scripts/run-local.mjs tsc --noEmit",

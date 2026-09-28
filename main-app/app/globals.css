@@ -1638,7 +1638,6 @@ textarea {
   border-radius: 12px;
   background: linear-gradient(135deg, #f3faf7, #fff);
   min-width: 0;
-  overflow: hidden;
 }
 .pay-estimate-main {
   display: flex;
@@ -4022,7 +4021,7 @@ footer {
     font-size: 13px;
     white-space: nowrap;
   }
-  .summary-grid strong span {
+.summary-grid strong span {
     font-size: 8px;
   }
   .monthly-rankings {
@@ -4086,11 +4085,23 @@ footer {
   .take-home-estimate { grid-column: 1/-1; grid-row: 3; }
   .deduction-breakdown { grid-column: 1/-1; grid-row: 4; }
   .pay-settings {
-    grid-column: 2;
-    grid-row: 1;
+    position: static;
+    grid-column: 1/-1;
+    grid-row: 5;
+    min-width: 0;
+  }
+  .pay-settings > summary {
+    width: 100%;
+    box-sizing: border-box;
+    text-align: center;
   }
   .pay-settings > div {
+    position: static;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 8px;
     grid-template-columns: 1fr;
+    box-shadow: none;
   }
   .pay-deductions-settings { grid-template-columns: 1fr; }
   .income-tax-settings,
@@ -4399,6 +4410,14 @@ footer {
   .off-range-arrow {
     padding-bottom: 12px;
   }
+}
+.weekly-overtime-note {
+  display: block;
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 7px;
+  font-style: normal;
+  line-height: 1.2;
 }
 .google-oauth-card {
   background: var(--card);

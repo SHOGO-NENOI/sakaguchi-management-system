@@ -78,8 +78,9 @@ import type {
 import { canonicalPersonnelName } from "@/app/lib/personnel";
 import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 import { estimateKumamotoResidentTax } from "@/app/lib/resident-tax";
+import { calculateWeeklyOvertimeMinutes } from "@/app/lib/overtime";
 
-const APP_VERSION = "2.5.6";
+const APP_VERSION = "2.5.7";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -903,24 +904,17 @@ export default function Home() {
     [summaryEntries],
   );
   const weeklyOvertimeMinutes = useMemo(() => {
-    const weeklyNormalMinutes = new Map<string, number>();
-    summaryEntries.forEach((entry) => {
-      const extra = extraMinutes(entry);
-      const normal = Math.max(
-        0,
-        workMinutes(entry) - extra.early - extra.overtime,
-      );
-      const week = startOfWeekSunday(entry.date);
-      weeklyNormalMinutes.set(
-        week,
-        (weeklyNormalMinutes.get(week) ?? 0) + normal,
-      );
-    });
-    let total = 0;
-    weeklyNormalMinutes.forEach((minutes) => {
-      total += Math.max(0, minutes - 40 * 60);
-    });
-    return total;
+    return calculateWeeklyOvertimeMinutes(
+      summaryEntries.map((entry) => {
+        const extra = extraMinutes(entry);
+        return {
+          week: startOfWeekSunday(entry.date),
+          workMinutes: workMinutes(entry),
+          earlyMinutes: extra.early,
+          dailyOvertimeMinutes: extra.overtime,
+        };
+      }),
+    );
   }, [summaryEntries]);
   const workedMonthCount = useMemo(() => {
     const months = new Set(
@@ -3773,6 +3767,7 @@ export default function Home() {
             holidayRangeSaving={holidayRangeSaving}
             holidayRangeMessage={holidayRangeMessage}
             summary={summary}
+            weeklyOvertimeMinutes={weeklyOvertimeMinutes}
             formatMinutes={formatMinutes}
             annualHotelNights={annualHotelNights}
             estimatedPay={estimatedPay}

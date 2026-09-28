@@ -29,6 +29,7 @@ type SummaryTabProps = {
     trips: number;
     selfDinner: number;
   };
+  weeklyOvertimeMinutes: number;
   formatMinutes: (minutes: number) => string;
   annualHotelNights: number;
   estimatedPay: {
@@ -81,6 +82,7 @@ export default function SummaryTab({
   holidayRangeSaving,
   holidayRangeMessage,
   summary,
+  weeklyOvertimeMinutes,
   formatMinutes,
   annualHotelNights,
   estimatedPay,
@@ -275,7 +277,12 @@ export default function SummaryTab({
           <span className="summary-icon coral">残</span>
           <div>
             <small>残業合計</small>
-            <strong>{formatMinutes(summary.overtime)}</strong>
+            <strong>{formatMinutes(summary.overtime + weeklyOvertimeMinutes)}</strong>
+            {weeklyOvertimeMinutes > 0 && (
+              <em className="weekly-overtime-note">
+                週40時間超過 {formatMinutes(weeklyOvertimeMinutes)}を含む
+              </em>
+            )}
           </div>
         </article>
         <article>
