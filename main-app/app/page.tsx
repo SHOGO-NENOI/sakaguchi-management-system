@@ -78,12 +78,15 @@ import type {
 import { canonicalPersonnelName } from "@/app/lib/personnel";
 import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 import { estimateKumamotoResidentTax } from "@/app/lib/resident-tax";
-import { calculateWeeklyOvertimeMinutes } from "@/app/lib/overtime";
+import {
+  calculateWeeklyOvertimeMinutes,
+  endOfWeekSaturday,
+} from "@/app/lib/overtime";
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.9";
-const APP_UPDATED_AT = "2026年9月28日";
+const APP_VERSION = "2.5.10";
+const APP_UPDATED_AT = "2026年9月29日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -905,23 +908,21 @@ export default function Home() {
           );
           acc.work += Math.max(0, rawWorkMinutes - breakMinutes);
           acc.breaks += breakMinutes;
-          const extra = extraMinutes(entry);
-          acc.early += extra.early;
-          acc.overtime += extra.overtime;
           if (entry.businessTrip) acc.trips += 1;
           if (entry.businessTrip && entry.dinnerType === "自費")
             acc.selfDinner += 1;
           return acc;
         },
-        { days: 0, work: 0, breaks: 0, early: 0, overtime: 0, trips: 0, selfDinner: 0 },
+        { days: 0, work: 0, breaks: 0, trips: 0, selfDinner: 0 },
       ),
     [paySettings.fullDayBreakMinutes, paySettings.halfDayBreakMinutes, summaryEntries],
   );
   const weeklyOvertimeMinutes = useMemo(() => {
+    const periodPrefix =
+      summaryPeriod === "annual" ? `${selectedYear}-` : month;
     return calculateWeeklyOvertimeMinutes(
-      summaryEntries.map((entry) => {
-        const extra = extraMinutes(entry);
-        return {
+      entries
+        .map((entry) => ({
           week: startOfWeekSunday(entry.date),
           workMinutes: netWorkMinutes(
             entry.type,
@@ -929,12 +930,19 @@ export default function Home() {
             Number(paySettings.fullDayBreakMinutes) || 0,
             Number(paySettings.halfDayBreakMinutes) || 0,
           ),
-          earlyMinutes: extra.early,
-          dailyOvertimeMinutes: extra.overtime,
-        };
-      }),
+        }))
+        .filter((record) => endOfWeekSaturday(record.week).startsWith(periodPrefix)),
+      currentDate,
     );
-  }, [paySettings.fullDayBreakMinutes, paySettings.halfDayBreakMinutes, summaryEntries]);
+  }, [
+    currentDate,
+    entries,
+    month,
+    paySettings.fullDayBreakMinutes,
+    paySettings.halfDayBreakMinutes,
+    selectedYear,
+    summaryPeriod,
+  ]);
   const workedMonthCount = useMemo(() => {
     const months = new Set(
       summaryEntries
@@ -951,10 +959,7 @@ export default function Home() {
     if (!dailyRate || !standardHours || !multiplier) return null;
     const hourlyRate = dailyRate / standardHours;
     const base = Math.round(summary.days * dailyRate);
-    const dailyExtra = Math.round(
-      ((summary.early + summary.overtime) / 60) * hourlyRate * multiplier,
-    );
-    const weeklyExtra = Math.round(
+    const overtimePay = Math.round(
       (weeklyOvertimeMinutes / 60) * hourlyRate * multiplier,
     );
     const tripAllowance = Math.round(
@@ -977,8 +982,7 @@ export default function Home() {
     );
     const gross =
       base +
-      dailyExtra +
-      weeklyExtra +
+      overtimePay +
       tripAllowance +
       selfDinnerAllowance +
       customAllowanceTotal;
@@ -1025,8 +1029,7 @@ export default function Home() {
     );
     return {
       base,
-      extra: dailyExtra,
-      weeklyExtra,
+      overtimePay,
       tripAllowance,
       selfDinnerAllowance,
       customAllowances,
@@ -1038,8 +1041,6 @@ export default function Home() {
   }, [
     paySettings,
     summary.days,
-    summary.early,
-    summary.overtime,
     summary.trips,
     summary.selfDinner,
     weeklyOvertimeMinutes,

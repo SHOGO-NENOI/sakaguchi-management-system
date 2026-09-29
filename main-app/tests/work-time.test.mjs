@@ -22,8 +22,6 @@ test("8時から17時を5日勤務し各60分休憩なら週40時間超過はな
   const records = Array.from({ length: 5 }, () => ({
     week: "2026-09-20",
     workMinutes: netWorkMinutes("1日", 9 * 60, 60, 0),
-    earlyMinutes: 0,
-    dailyOvertimeMinutes: 0,
   }));
-  assert.equal(calculateWeeklyOvertimeMinutes(records), 0);
+  assert.equal(calculateWeeklyOvertimeMinutes(records, "2026-09-27"), 0);
 });

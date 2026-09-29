@@ -97,8 +97,11 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /雇用保険料を自動計算する/);
   assert.match(summary, /一般の事業（0\.5％）/);
   assert.match(summary, /建設・農林水産・清酒製造（0\.6％）/);
-  assert.match(summary, /summary\.overtime \+ weeklyOvertimeMinutes/);
-  assert.match(summary, /週40時間超過/);
+  assert.match(summary, /時間外労働/);
+  assert.match(summary, /日〜土・土曜終了後に確定/);
+  assert.match(summary, /時間外手当/);
+  assert.doesNotMatch(summary, /<small>早出合計<\/small>/);
+  assert.doesNotMatch(summary, /<small>残業合計<\/small>/);
   assert.match(page, /breakMinutesForEntry/);
   assert.match(page, /netWorkMinutes/);
   assert.match(summary, /休憩控除/);

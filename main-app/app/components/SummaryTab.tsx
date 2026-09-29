@@ -25,8 +25,6 @@ type SummaryTabProps = {
     days: number;
     work: number;
     breaks: number;
-    early: number;
-    overtime: number;
     trips: number;
     selfDinner: number;
   };
@@ -35,8 +33,7 @@ type SummaryTabProps = {
   annualHotelNights: number;
   estimatedPay: {
     base: number;
-    extra: number;
-    weeklyExtra: number;
+    overtimePay: number;
     tripAllowance: number;
     selfDinnerAllowance: number;
     customAllowances: { id: string; name: string; amount: number }[];
@@ -275,22 +272,11 @@ export default function SummaryTab({
           </div>
         </article>
         <article>
-          <span className="summary-icon amber">早</span>
+          <span className="summary-icon coral">外</span>
           <div>
-            <small>早出合計</small>
-            <strong>{formatMinutes(summary.early)}</strong>
-          </div>
-        </article>
-        <article>
-          <span className="summary-icon coral">残</span>
-          <div>
-            <small>残業合計</small>
-            <strong>{formatMinutes(summary.overtime + weeklyOvertimeMinutes)}</strong>
-            {weeklyOvertimeMinutes > 0 && (
-              <em className="weekly-overtime-note">
-                週40時間超過 {formatMinutes(weeklyOvertimeMinutes)}を含む
-              </em>
-            )}
+            <small>時間外労働</small>
+            <strong>{formatMinutes(weeklyOvertimeMinutes)}</strong>
+            <em className="weekly-overtime-note">日〜土・土曜終了後に確定</em>
           </div>
         </article>
         <article>
@@ -342,12 +328,9 @@ export default function SummaryTab({
             <span>
               基本給 ¥{estimatedPay.base.toLocaleString("ja-JP")}
             </span>
-            <span>
-              早出・残業 ¥{estimatedPay.extra.toLocaleString("ja-JP")}
-            </span>
-            {estimatedPay.weeklyExtra > 0 && (
+            {estimatedPay.overtimePay > 0 && (
               <span>
-                週40時間超過分 ¥{estimatedPay.weeklyExtra.toLocaleString("ja-JP")}
+                時間外手当 ¥{estimatedPay.overtimePay.toLocaleString("ja-JP")}
               </span>
             )}
             {estimatedPay.tripAllowance > 0 && (
@@ -766,7 +749,7 @@ export default function SummaryTab({
               </div>
             </div>
             <p>
-              休憩時間は勤務記録1件につき1回、総労働時間と週40時間超過の計算から控除します。自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
+              休憩時間は勤務記録1件につき1回、総労働時間から控除します。時間外労働は、休憩控除後の実働を日曜〜土曜で合計し、40時間を超えた分を土曜日終了後に確定します。早出と17時以降の時間は個別加算せず、この週合計に含めます。自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
             </p>
           </div>
         </details>
