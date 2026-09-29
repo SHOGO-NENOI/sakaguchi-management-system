@@ -140,5 +140,21 @@ test("keeps schedule site names readable on narrow screens", async () => {
   );
   assert.match(historyPlans, /planEnded[\s\S]*?isPlanEnded\(entry\.date/);
   assert.doesNotMatch(historyPlans, /groupPlanCount\s*>\s*1\s*&&\s*isPlanEnded/);
-  assert.match(styles, /\.history-item\.plan-ended\s*\{[\s\S]*?background-color:\s*#dce7e3\s*!important;/);
+  assert.match(
+    styles,
+    /\.history-item\.plan-ended\s*\{[\s\S]*?background-color:\s*color-mix\(in srgb, var\(--muted\) 14%, var\(--paper\)\)\s*!important;/,
+  );
+});
+
+test("keeps ended schedule cards readable in every skin", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  const endedCardRule = css.match(
+    /html body \.plan-panel \.history-list \.history-item\.plan-ended \{[\s\S]*?\n\}/,
+  )?.[0] ?? "";
+  assert.match(endedCardRule, /color: var\(--text\) !important/);
+  assert.match(
+    endedCardRule,
+    /background-color: color-mix\(in srgb, var\(--muted\) 14%, var\(--paper\)\) !important/,
+  );
+  assert.doesNotMatch(endedCardRule, /#dce7e3|#26312e/);
 });

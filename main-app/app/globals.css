@@ -6251,12 +6251,13 @@ html body .history-list .history-day .record-site > p {
 html body .plan-panel .history-list .history-item.plan-ended {
   padding: 6px;
   border-radius: 9px;
-  background-color: #dce7e3 !important;
+  color: var(--text) !important;
+  background-color: color-mix(in srgb, var(--muted) 14%, var(--paper)) !important;
   background-image: none !important;
   box-shadow: inset 4px 0 0 color-mix(in srgb, var(--muted) 72%, var(--green));
 }
-:is(html[data-theme="dark"], html[data-theme="black"]) body .plan-panel .history-list .history-item.plan-ended {
-  background-color: #26312e !important;
+html body .plan-panel .history-list .history-item.plan-ended :is(.record-main p, .actions button:not(.delete)) {
+  color: var(--text) !important;
 }
 html body .history-list .completed-badge {
   padding: 1px 5px;
