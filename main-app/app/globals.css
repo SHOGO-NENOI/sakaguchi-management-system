@@ -1586,6 +1586,10 @@ textarea {
   color: #245d78;
   background: #e3f1f8;
 }
+.summary-icon.break {
+  color: #4d6170;
+  background: #edf2f5;
+}
 .dinner {
   color: #775327;
   background: #f6eadb;

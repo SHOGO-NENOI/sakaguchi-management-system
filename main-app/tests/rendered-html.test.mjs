@@ -99,6 +99,11 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /建設・農林水産・清酒製造（0\.6％）/);
   assert.match(summary, /summary\.overtime \+ weeklyOvertimeMinutes/);
   assert.match(summary, /週40時間超過/);
+  assert.match(page, /breakMinutesForEntry/);
+  assert.match(page, /netWorkMinutes/);
+  assert.match(summary, /休憩控除/);
+  assert.match(summary, /1日勤務の休憩/);
+  assert.match(summary, /半日勤務の休憩/);
 });
 
 test("separates regular workers and supporters and carries site addresses into plans", async () => {

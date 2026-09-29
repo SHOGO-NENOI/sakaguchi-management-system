@@ -80,8 +80,9 @@ import { estimateMonthlyIncomeTax } from "@/app/lib/income-tax";
 import { estimateKumamotoResidentTax } from "@/app/lib/resident-tax";
 import { calculateWeeklyOvertimeMinutes } from "@/app/lib/overtime";
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
+import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.8";
+const APP_VERSION = "2.5.9";
 const APP_UPDATED_AT = "2026年9月28日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -89,6 +90,8 @@ const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
 const defaultPaySettings: PaySettings = {
   dailyRate: "",
   standardHours: "8",
+  fullDayBreakMinutes: "60",
+  halfDayBreakMinutes: "0",
   overtimeMultiplier: "1.25",
   tripAllowance: "1500",
   customAllowances: [],
@@ -893,7 +896,15 @@ export default function Home() {
         (acc, entry) => {
           if (entry.type === "1日") acc.days += 1;
           if (entry.type === "半日") acc.days += 0.5;
-          acc.work += workMinutes(entry);
+          const rawWorkMinutes = workMinutes(entry);
+          const breakMinutes = breakMinutesForEntry(
+            entry.type,
+            rawWorkMinutes,
+            Number(paySettings.fullDayBreakMinutes) || 0,
+            Number(paySettings.halfDayBreakMinutes) || 0,
+          );
+          acc.work += Math.max(0, rawWorkMinutes - breakMinutes);
+          acc.breaks += breakMinutes;
           const extra = extraMinutes(entry);
           acc.early += extra.early;
           acc.overtime += extra.overtime;
@@ -902,9 +913,9 @@ export default function Home() {
             acc.selfDinner += 1;
           return acc;
         },
-        { days: 0, work: 0, early: 0, overtime: 0, trips: 0, selfDinner: 0 },
+        { days: 0, work: 0, breaks: 0, early: 0, overtime: 0, trips: 0, selfDinner: 0 },
       ),
-    [summaryEntries],
+    [paySettings.fullDayBreakMinutes, paySettings.halfDayBreakMinutes, summaryEntries],
   );
   const weeklyOvertimeMinutes = useMemo(() => {
     return calculateWeeklyOvertimeMinutes(
@@ -912,13 +923,18 @@ export default function Home() {
         const extra = extraMinutes(entry);
         return {
           week: startOfWeekSunday(entry.date),
-          workMinutes: workMinutes(entry),
+          workMinutes: netWorkMinutes(
+            entry.type,
+            workMinutes(entry),
+            Number(paySettings.fullDayBreakMinutes) || 0,
+            Number(paySettings.halfDayBreakMinutes) || 0,
+          ),
           earlyMinutes: extra.early,
           dailyOvertimeMinutes: extra.overtime,
         };
       }),
     );
-  }, [summaryEntries]);
+  }, [paySettings.fullDayBreakMinutes, paySettings.halfDayBreakMinutes, summaryEntries]);
   const workedMonthCount = useMemo(() => {
     const months = new Set(
       summaryEntries

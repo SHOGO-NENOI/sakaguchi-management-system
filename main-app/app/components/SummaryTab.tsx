@@ -24,6 +24,7 @@ type SummaryTabProps = {
   summary: {
     days: number;
     work: number;
+    breaks: number;
     early: number;
     overtime: number;
     trips: number;
@@ -267,6 +268,13 @@ export default function SummaryTab({
           </div>
         </article>
         <article>
+          <span className="summary-icon break">休</span>
+          <div>
+            <small>休憩控除</small>
+            <strong>{formatMinutes(summary.breaks)}</strong>
+          </div>
+        </article>
+        <article>
           <span className="summary-icon amber">早</span>
           <div>
             <small>早出合計</small>
@@ -417,6 +425,42 @@ export default function SummaryTab({
                   }
                 />
                 <b>時間</b>
+              </div>
+            </label>
+            <label>
+              <span>1日勤務の休憩</span>
+              <div className="pay-input-wrap">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="600"
+                  step="15"
+                  value={paySettings.fullDayBreakMinutes}
+                  onChange={(event) => updatePaySettings({
+                    ...paySettings,
+                    fullDayBreakMinutes: event.target.value,
+                  })}
+                />
+                <b>分</b>
+              </div>
+            </label>
+            <label>
+              <span>半日勤務の休憩</span>
+              <div className="pay-input-wrap">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max="600"
+                  step="15"
+                  value={paySettings.halfDayBreakMinutes}
+                  onChange={(event) => updatePaySettings({
+                    ...paySettings,
+                    halfDayBreakMinutes: event.target.value,
+                  })}
+                />
+                <b>分</b>
               </div>
             </label>
             <label>
@@ -722,7 +766,7 @@ export default function SummaryTab({
               </div>
             </div>
             <p>
-              自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
+              休憩時間は勤務記録1件につき1回、総労働時間と週40時間超過の計算から控除します。自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
             </p>
           </div>
         </details>

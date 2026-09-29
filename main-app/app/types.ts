@@ -47,6 +47,8 @@ export type CustomAllowance = {
 export type PaySettings = {
   dailyRate: string;
   standardHours: string;
+  fullDayBreakMinutes: string;
+  halfDayBreakMinutes: string;
   overtimeMultiplier: string;
   tripAllowance: string;
   customAllowances: CustomAllowance[];
