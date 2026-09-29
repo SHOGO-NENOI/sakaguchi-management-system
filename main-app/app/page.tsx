@@ -85,7 +85,7 @@ import {
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.10";
+const APP_VERSION = "2.5.11";
 const APP_UPDATED_AT = "2026年9月29日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -907,13 +907,12 @@ export default function Home() {
             Number(paySettings.halfDayBreakMinutes) || 0,
           );
           acc.work += Math.max(0, rawWorkMinutes - breakMinutes);
-          acc.breaks += breakMinutes;
           if (entry.businessTrip) acc.trips += 1;
           if (entry.businessTrip && entry.dinnerType === "自費")
             acc.selfDinner += 1;
           return acc;
         },
-        { days: 0, work: 0, breaks: 0, trips: 0, selfDinner: 0 },
+        { days: 0, work: 0, trips: 0, selfDinner: 0 },
       ),
     [paySettings.fullDayBreakMinutes, paySettings.halfDayBreakMinutes, summaryEntries],
   );

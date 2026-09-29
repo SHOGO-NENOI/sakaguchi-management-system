@@ -24,7 +24,6 @@ type SummaryTabProps = {
   summary: {
     days: number;
     work: number;
-    breaks: number;
     trips: number;
     selfDinner: number;
   };
@@ -250,7 +249,7 @@ export default function SummaryTab({
         <article>
           <span className="summary-icon blue">日</span>
           <div>
-            <small>勤務日数</small>
+            <small>労働日数</small>
             <strong>
               {summary.days}
               <span>日</span>
@@ -262,13 +261,6 @@ export default function SummaryTab({
           <div>
             <small>総労働時間</small>
             <strong>{formatMinutes(summary.work)}</strong>
-          </div>
-        </article>
-        <article>
-          <span className="summary-icon break">休</span>
-          <div>
-            <small>休憩控除</small>
-            <strong>{formatMinutes(summary.breaks)}</strong>
           </div>
         </article>
         <article>

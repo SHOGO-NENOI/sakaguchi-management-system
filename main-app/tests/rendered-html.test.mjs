@@ -104,7 +104,9 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.doesNotMatch(summary, /<small>残業合計<\/small>/);
   assert.match(page, /breakMinutesForEntry/);
   assert.match(page, /netWorkMinutes/);
-  assert.match(summary, /休憩控除/);
+  assert.match(summary, /<small>労働日数<\/small>/);
+  assert.doesNotMatch(summary, /<small>勤務日数<\/small>/);
+  assert.doesNotMatch(summary, /<small>休憩控除<\/small>/);
   assert.match(summary, /1日勤務の休憩/);
   assert.match(summary, /半日勤務の休憩/);
 });
