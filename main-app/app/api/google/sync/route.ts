@@ -5,6 +5,7 @@ import { googleFetch } from "../../../lib/google-api";
 import { ensureOperationalSchema } from "../../../lib/operational-schema";
 import { appendAudit } from "../../../lib/audit";
 import { syncGoogleCalendar, syncSheet } from "../../entries/google-calendar";
+import { calendarRecordStatus } from "../../../lib/calendar-title";
 
 type GoogleEvent = {
   id: string; status?: string; summary?: string; description?: string; location?: string; updated?: string;
@@ -21,6 +22,7 @@ function isAppEvent(event: GoogleEvent) { return event.extendedProperties?.priva
 function addDay(value: string) { const date = new Date(`${value}T00:00:00Z`); date.setUTCDate(date.getUTCDate() + 1); return date.toISOString().slice(0, 10); }
 function isSunday(value: string) { return new Date(`${value}T00:00:00Z`).getUTCDay() === 0; }
 function isOffType(value: string) { return ["休み", "有給", "公休", "雨天中止", "欠勤"].includes(value); }
+function todayInJapan() { return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date()); }
 
 async function calendarEvents() {
   const from = new Date(); from.setFullYear(from.getFullYear() - 2);
@@ -84,7 +86,7 @@ export async function POST(request: Request) {
       const rows = await db.select().from(attendanceEntries).where(eq(attendanceEntries.deletedAt, ""));
       const events = await calendarEvents();
       const eventMap = new Map(events.map((event) => [event.id, event]));
-      let updated = 0, calendarRemoved = 0, calendarNormalized = 0;
+      let updated = 0, calendarRemoved = 0, calendarNormalized = 0, calendarStatusUpdated = 0;
       const normalizedOffRows = new Set<number>();
       for (const row of rows.filter((item) => isOffType(item.workType))) {
         const ids = row.googleEventId.split("｜").filter(Boolean);
@@ -128,17 +130,32 @@ export async function POST(request: Request) {
           if (info["メモ"]) changes.note = replacePart(changes.note ?? row.note, index, info["メモ"]);
           if (event.location) changes.address = replacePart(changes.address ?? row.address, index, event.location);
         });
+        let nextRow = row;
         if (Object.keys(changes).length) {
           const updatedAt = new Date().toISOString();
           const next = { ...row, ...changes, updatedAt, syncStatus: "synced", syncError: "", lastSyncedAt: updatedAt, lastModifiedSource: "google" };
           await db.update(attendanceEntries).set({ ...changes, updatedAt, syncStatus: "synced", syncError: "", lastSyncedAt: updatedAt, lastModifiedSource: "google" }).where(eq(attendanceEntries.id, row.id));
           await syncSheet(next, "upsert"); updated += 1;
           await appendAudit({ action: "update", targetType: "entry", targetId: row.id, targetName: `${next.workDate} ${next.site || next.workType}`, actorName: "Googleカレンダー", before: row, after: next });
+          nextRow = next;
+        }
+        if (!isOffType(nextRow.workType)) {
+          const expectedStatus = calendarRecordStatus(nextRow.workDate, todayInJapan());
+          const needsStatusUpdate = linked.some((event) =>
+            details(event.description)["記録状態"] !== expectedStatus ||
+            event.summary?.startsWith("【予定】"),
+          );
+          if (needsStatusUpdate) {
+            const result = await syncGoogleCalendar(nextRow, "upsert");
+            const lastSyncedAt = new Date().toISOString();
+            await db.update(attendanceEntries).set({ googleEventId: result.eventId, syncStatus: "synced", syncError: "", lastSyncedAt, lastModifiedSource: "app" }).where(eq(attendanceEntries.id, row.id));
+            calendarStatusUpdated += 1;
+          }
         }
       }
       const completedAt = new Date().toISOString();
       await db.update(googleOAuthSettings).set({ lastCalendarSyncAt: completedAt, syncLockUntil: 0 }).where(eq(googleOAuthSettings.id, 1));
-      return Response.json({ ok: true, updated, calendarRemoved, calendarNormalized, trashed: 0, duplicates: duplicateGroups(events, new Set(rows.flatMap((row) => row.googleEventId.split("｜").filter(Boolean)))) });
+      return Response.json({ ok: true, updated, calendarRemoved, calendarNormalized, calendarStatusUpdated, trashed: 0, duplicates: duplicateGroups(events, new Set(rows.flatMap((row) => row.googleEventId.split("｜").filter(Boolean)))) });
     } catch (error) { await db.update(googleOAuthSettings).set({ syncLockUntil: 0 }).where(eq(googleOAuthSettings.id, 1)); throw error; }
   } catch (error) { return Response.json({ error: error instanceof Error ? error.message : "双方向同期に失敗しました" }, { status: 400 }); }
 }

@@ -1,7 +1,7 @@
 import { attendanceEntries } from "../../../db/schema";
 import { ensureSpreadsheet, googleFetch } from "../../lib/google-api";
 import { getGoogleOAuthSettings } from "../../lib/google-oauth";
-import { calendarEventTitle } from "../../lib/calendar-title";
+import { calendarEventTitle, calendarRecordStatus } from "../../lib/calendar-title";
 
 type EntryRow = typeof attendanceEntries.$inferSelect;
 const normalizedWorkType = (value: string) => ["有給", "公休", "雨天中止", "欠勤"].includes(value) ? "休み" : value;
@@ -29,7 +29,7 @@ export async function syncSheet(row: EntryRow, action: "upsert" | "delete") {
     }
     return spreadsheet.url;
   }
-  const status = row.workDate > todayInJapan() ? "予定" : "実績";
+  const status = calendarRecordStatus(row.workDate, todayInJapan());
   const values = [[String(row.id), row.workDate, status, normalizedWorkType(row.workType), row.startTime, row.endTime, row.location, row.site, row.address, row.coordinates, row.personnelNames, row.work, row.note, row.businessTrip ? "出張" : "", row.dinnerType, row.hotelName, new Date().toISOString()]];
   if (rowNumber > 0) {
     await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent(`勤務記録!A${rowNumber}:Q${rowNumber}`)}?valueInputOption=USER_ENTERED`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) });
@@ -51,7 +51,7 @@ export async function syncGoogleCalendar(row: EntryRow, action: "upsert" | "dele
   const sites = siteRows(row);
   const targets = effectiveAction === "delete" ? Array.from({ length: Math.max(oldIds.length, 1) }, (_, index) => ({ id: oldIds[index] ?? "", site: sites[index] ?? sites[0] })) : sites.map((site, index) => ({ id: oldIds[index] ?? "", site }));
   const nextIds: string[] = [];
-  const status = row.workDate > todayInJapan() ? "予定" : "実績";
+  const status = calendarRecordStatus(row.workDate, todayInJapan());
   for (const [targetIndex, target] of targets.entries()) {
     if (effectiveAction === "delete") {
       if (target.id) await googleFetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(target.id)}`, { method: "DELETE" });

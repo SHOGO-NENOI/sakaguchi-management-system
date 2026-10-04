@@ -85,7 +85,7 @@ import {
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.13";
+const APP_VERSION = "2.5.14";
 const APP_UPDATED_AT = "2026年10月4日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -2139,7 +2139,7 @@ export default function Home() {
           } catch {}
         }
         setSyncManagerMessage(
-          `照合完了：Googleから${data.updated}件更新${data.calendarNormalized ? `・日曜日の休み${data.calendarNormalized}件を整理` : ""}${data.calendarRemoved ? `・Google側で削除された予定${data.calendarRemoved}件を検出（アプリの記録は保持）` : ""}`,
+          `照合完了：Googleから${data.updated}件更新${data.calendarStatusUpdated ? `・予定／実績${data.calendarStatusUpdated}件を更新` : ""}${data.calendarNormalized ? `・日曜日の休み${data.calendarNormalized}件を整理` : ""}${data.calendarRemoved ? `・Google側で削除された予定${data.calendarRemoved}件を検出（アプリの記録は保持）` : ""}`,
         );
         await loadSyncDashboard();
       }
