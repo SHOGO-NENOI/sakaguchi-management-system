@@ -1,6 +1,7 @@
 import { attendanceEntries } from "../../../db/schema";
 import { ensureSpreadsheet, googleFetch } from "../../lib/google-api";
 import { getGoogleOAuthSettings } from "../../lib/google-oauth";
+import { calendarEventTitle } from "../../lib/calendar-title";
 
 type EntryRow = typeof attendanceEntries.$inferSelect;
 const normalizedWorkType = (value: string) => ["有給", "公休", "雨天中止", "欠勤"].includes(value) ? "休み" : value;
@@ -59,7 +60,7 @@ export async function syncGoogleCalendar(row: EntryRow, action: "upsert" | "dele
     const place = [target.site.location, target.site.site].filter(Boolean).join("@") || "現場未入力";
     const identity = { private: { sakaguchiEntryId: String(row.id), sakaguchiSiteIndex: String(targetIndex), sakaguchiSource: "attendance-app" } };
     const event = isOff ? { summary: row.note.trim() || "休み", colorId: "2", start: { date: row.workDate }, end: { date: addDay(options.calendarEndDate || row.workDate) }, extendedProperties: identity } : {
-      summary: `${status === "予定" ? "【予定】" : ""}${place}【${target.site.work || workType}】`, location: target.site.address || target.site.coordinates || target.site.location,
+      summary: calendarEventTitle(place, target.site.work || workType), location: target.site.address || target.site.coordinates || target.site.location,
       description: [`記録状態：${status}`, `勤務区分：${workType}`, `現場：${place}`, target.site.work && `作業内容：${target.site.work}`, target.site.address && `住所：${target.site.address}`, target.site.coordinates && `緯度・経度：${target.site.coordinates}`, target.site.personnelNames && `作業者：${target.site.personnelNames}`, row.businessTrip && `出張・夜ご飯：${row.dinnerType || "未選択"}`, row.businessTrip && row.hotelName && `宿泊ホテル：${row.hotelName}`, target.site.note && `メモ：${target.site.note}`].filter(Boolean).join("\n"), colorId: row.businessTrip ? "5" : "7",
       start: { dateTime: `${row.workDate}T${target.site.start}:00+09:00`, timeZone: "Asia/Tokyo" }, end: { dateTime: `${row.workDate}T${target.site.end}:00+09:00`, timeZone: "Asia/Tokyo" }, extendedProperties: identity,
     };
