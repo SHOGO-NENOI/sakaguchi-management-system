@@ -1,4 +1,5 @@
 export type WorkType = "1日" | "半日" | "休み";
+export type WorkMode = "通常勤務" | "出張" | "社外応援";
 export type Entry = {
   id: string;
   date: string;
@@ -12,6 +13,7 @@ export type Entry = {
   personnelNames: string;
   work: string;
   note: string;
+  workMode: WorkMode;
   businessTrip: boolean;
   dinnerType: string;
   hotelName: string;

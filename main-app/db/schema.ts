@@ -13,6 +13,7 @@ export const attendanceEntries = sqliteTable("attendance_entries", {
   personnelNames: text("personnel_names").notNull().default(""),
   work: text("work").notNull().default(""),
   note: text("note").notNull().default(""),
+  workMode: text("work_mode").notNull().default("通常勤務"),
   businessTrip: integer("business_trip", { mode: "boolean" }).notNull().default(false),
   dinnerType: text("dinner_type").notNull().default(""),
   hotelName: text("hotel_name").notNull().default(""),

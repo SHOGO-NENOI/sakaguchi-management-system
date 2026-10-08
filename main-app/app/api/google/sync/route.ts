@@ -128,6 +128,14 @@ export async function POST(request: Request) {
           if (!title && info["作業内容"]) changes.work = replacePart(changes.work ?? row.work, index, info["作業内容"]);
           if (info["作業者"]) changes.personnelNames = replacePart(changes.personnelNames ?? row.personnelNames, index, info["作業者"]);
           if (info["メモ"]) changes.note = replacePart(changes.note ?? row.note, index, info["メモ"]);
+          if (info["勤務形態"] === "通常勤務" || info["勤務形態"] === "出張" || info["勤務形態"] === "社外応援") {
+            changes.workMode = info["勤務形態"];
+            changes.businessTrip = info["勤務形態"] === "出張";
+            if (info["勤務形態"] !== "出張") {
+              changes.dinnerType = "";
+              changes.hotelName = "";
+            }
+          }
           if (event.location) changes.address = replacePart(changes.address ?? row.address, index, event.location);
         });
         let nextRow = row;

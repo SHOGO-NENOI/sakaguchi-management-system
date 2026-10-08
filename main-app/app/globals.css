@@ -1222,7 +1222,7 @@ textarea {
   gap: 8px;
 }
 .trip-options {
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .dinner-options {
   grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -3184,6 +3184,11 @@ textarea {
   color: #665116;
   background: #fff4c7;
 }
+.calendar-entry.work-support {
+  border-color: #cdb9e5;
+  color: #594078;
+  background: #f3ebfb;
+}
 .calendar-entry.work-normal {
   border-color: #b9dce9;
   color: #275f73;
@@ -3242,6 +3247,14 @@ textarea {
   padding-left: 12px;
   border-color: #eadca9;
   background: #fff9df;
+}
+.history-item.work-support {
+  margin-right: -8px;
+  margin-left: -8px;
+  padding-right: 12px;
+  padding-left: 12px;
+  border-color: #d9c8eb;
+  background: #f8f1ff;
 }
 .history-item.work-normal {
   margin-right: -8px;
@@ -3389,6 +3402,10 @@ textarea {
 .record-extra .trip-badge {
   color: #286b80;
   background: #e7f3f7;
+}
+.record-extra .support-badge {
+  color: #67458a;
+  background: #f0e5fb;
 }
 .record-extra .hotel-badge {
   color: #625188;
@@ -3830,6 +3847,10 @@ footer {
   border-color: #5c5130;
   background: #332f1f;
 }
+:is(html[data-theme="dark"], html[data-theme="black"]) .history-item.work-support {
+  border-color: #624a78;
+  background: #2f2538;
+}
 :is(html[data-theme="dark"], html[data-theme="black"]) .history-item.work-normal {
   border-color: #355465;
   background: #1b2d36;
@@ -3838,6 +3859,11 @@ footer {
   border-color: #665b34;
   color: #f5dda0;
   background: #3b3521;
+}
+:is(html[data-theme="dark"], html[data-theme="black"]) .calendar-entry.work-support {
+  border-color: #72558d;
+  color: #e4caf7;
+  background: #34283f;
 }
 :is(html[data-theme="dark"], html[data-theme="black"]) .calendar-entry.work-normal {
   border-color: #3b6072;

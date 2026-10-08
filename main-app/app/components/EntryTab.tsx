@@ -218,7 +218,8 @@ export default function EntryTab({
       ...form,
       date: voiceResult.date ?? form.date,
       type: voiceResult.type ?? form.type,
-      businessTrip: voiceResult.businessTrip ?? form.businessTrip,
+      workMode: voiceResult.workMode ?? form.workMode,
+      businessTrip: (voiceResult.workMode ?? form.workMode) === "出張",
       site: replaceFirst(form.site, voiceResult.siteName ?? matched?.site),
       location: replaceFirst(form.location, voiceResult.location ?? matched?.location),
       address: replaceFirst(form.address, matched?.address),
@@ -364,6 +365,7 @@ export default function EntryTab({
                             personnelNames: "",
                             work: "",
                             note: "",
+                            workMode: "通常勤務",
                             businessTrip: false,
                             dinnerType: "",
                             hotelName: "",
@@ -432,15 +434,16 @@ export default function EntryTab({
         ) : (
           <div className="field-grid details">
             <fieldset className="wide trip-field">
-              <legend>出張</legend>
+              <legend>勤務形態</legend>
               <div className="trip-options">
                 <button
                   type="button"
-                  className={!form.businessTrip ? "selected" : ""}
-                  aria-pressed={!form.businessTrip}
+                  className={form.workMode === "通常勤務" ? "selected" : ""}
+                  aria-pressed={form.workMode === "通常勤務"}
                   onClick={() =>
                     setForm({
                       ...form,
+                      workMode: "通常勤務",
                       businessTrip: false,
                       dinnerType: "",
                       hotelName: "",
@@ -451,11 +454,27 @@ export default function EntryTab({
                 </button>
                 <button
                   type="button"
-                  className={form.businessTrip ? "selected" : ""}
-                  aria-pressed={form.businessTrip}
-                  onClick={() => setForm({ ...form, businessTrip: true })}
+                  className={form.workMode === "出張" ? "selected" : ""}
+                  aria-pressed={form.workMode === "出張"}
+                  onClick={() => setForm({ ...form, workMode: "出張", businessTrip: true })}
                 >
                   出張
+                </button>
+                <button
+                  type="button"
+                  className={form.workMode === "社外応援" ? "selected" : ""}
+                  aria-pressed={form.workMode === "社外応援"}
+                  onClick={() =>
+                    setForm({
+                      ...form,
+                      workMode: "社外応援",
+                      businessTrip: false,
+                      dinnerType: "",
+                      hotelName: "",
+                    })
+                  }
+                >
+                  社外応援
                 </button>
               </div>
             </fieldset>

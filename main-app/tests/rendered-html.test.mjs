@@ -74,6 +74,20 @@ test("includes offline, backup, restore, audit, and concurrency safeguards", asy
   assert.match(schema, /export const auditLogs/);
 });
 
+test("offers outside-company support as a persisted work mode", async () => {
+  const [entryTab, entriesApi, schema, calendarSync] = await Promise.all([
+    readFile(new URL("../app/components/EntryTab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/google-calendar.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(entryTab, />\s*社外応援\s*<\/button>/);
+  assert.match(entryTab, /workMode:\s*"社外応援"/);
+  assert.match(entriesApi, /workMode === "出張" \|\| workMode === "社外応援"/);
+  assert.match(schema, /workMode:\s*text\("work_mode"\)/);
+  assert.match(calendarSync, /`勤務形態：\$\{workMode\(row\)\}`/);
+});
+
 test("includes configurable deductions and take-home estimate", async () => {
   const [page, summary, types] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

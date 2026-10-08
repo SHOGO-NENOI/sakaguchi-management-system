@@ -9,7 +9,7 @@ export type AttendanceVoiceResult = {
   transcript: string;
   date?: string;
   type?: "1日" | "半日" | "休み";
-  businessTrip?: boolean;
+  workMode?: "通常勤務" | "出張" | "社外応援";
   site?: VoiceSiteOption;
   siteName?: string;
   location?: string;
@@ -108,11 +108,12 @@ export function parseAttendanceVoice(
   const labelledWorkers = labelled(transcript, "作業者");
   const labelledWork = labelled(transcript, "作業内容") || labelled(transcript, "作業");
   const date = parseVoiceDate(transcript, baseDate);
+  const workMode = normalized.includes("社外応援") ? "社外応援" : normalized.includes("出張") ? "出張" : undefined;
   return {
     transcript,
     ...(date ? { date } : {}),
     ...(type ? { type } : {}),
-    ...(normalized.includes("出張") ? { businessTrip: true } : {}),
+    ...(workMode ? { workMode } : {}),
     ...(matchedSite ? { site: matchedSite } : {}),
     ...(siteName ? { siteName } : {}),
     ...(location ? { location } : {}),
@@ -126,7 +127,7 @@ export function voiceResultLines(result: AttendanceVoiceResult) {
   return [
     result.date && `日付：${result.date}`,
     result.type && `勤務区分：${result.type}`,
-    result.businessTrip && "出張：あり",
+    result.workMode && `勤務形態：${result.workMode}`,
     result.location && `場所：${result.location}`,
     result.siteName && `現場名：${result.siteName}`,
     result.start && `開始：${result.start}`,

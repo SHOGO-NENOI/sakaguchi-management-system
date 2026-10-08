@@ -18,6 +18,7 @@ type Payload = {
   personnelNames?: string;
   work?: string;
   note?: string;
+  workMode?: string;
   businessTrip?: boolean;
   dinnerType?: string;
   hotelName?: string;
@@ -29,12 +30,15 @@ type Payload = {
 
 const normalizedWorkType = (workType: string) => ["有給", "公休", "雨天中止", "欠勤"].includes(workType) ? "休み" : workType;
 const normalizedDinnerType = (dinnerType: string) => dinnerType === "自腹" ? "自費" : dinnerType;
+const normalizedWorkMode = (workMode: string | undefined, businessTrip = false) =>
+  workMode === "出張" || workMode === "社外応援" ? workMode : businessTrip ? "出張" : "通常勤務";
 
 const mapEntry = (row: typeof attendanceEntries.$inferSelect) => ({
   id: String(row.id), date: row.workDate, type: normalizedWorkType(row.workType),
   start: row.startTime, end: row.endTime, site: row.site, location: row.location,
   address: row.address, coordinates: row.coordinates,
   personnelNames: row.personnelNames, work: row.work, note: row.note,
+  workMode: normalizedWorkMode(row.workMode, row.businessTrip),
   businessTrip: row.businessTrip, dinnerType: normalizedDinnerType(row.dinnerType), hotelName: row.hotelName,
   googleEventId: row.googleEventId,
   deletedAt: row.deletedAt, syncStatus: row.syncStatus, syncError: row.syncError,
@@ -45,15 +49,17 @@ const mapEntry = (row: typeof attendanceEntries.$inferSelect) => ({
 function values(payload: Payload) {
   if (!payload.date || !payload.type) throw new Error("日付と勤務区分は必須です");
   const workType = normalizedWorkType(payload.type);
+  const workMode = normalizedWorkMode(payload.workMode, payload.businessTrip);
   return {
     workDate: payload.date, workType, startTime: payload.start ?? "",
     endTime: payload.end ?? "", site: payload.site?.trim() ?? "", location: payload.location?.trim() ?? "",
     address: payload.address?.trim() ?? "", coordinates: payload.coordinates?.trim() ?? "",
     personnelNames: payload.personnelNames?.trim() ?? "",
     work: payload.work?.trim() ?? "", note: workType === "休み" ? payload.note?.trim() || "休み" : payload.note?.trim() ?? "",
-    businessTrip: payload.businessTrip ?? false,
-    dinnerType: payload.businessTrip ? payload.dinnerType ?? "" : "",
-    hotelName: payload.businessTrip ? payload.hotelName?.trim() ?? "" : "",
+    workMode,
+    businessTrip: workMode === "出張",
+    dinnerType: workMode === "出張" ? payload.dinnerType ?? "" : "",
+    hotelName: workMode === "出張" ? payload.hotelName?.trim() ?? "" : "",
   };
 }
 

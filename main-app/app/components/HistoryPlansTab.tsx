@@ -215,6 +215,8 @@ export default function HistoryPlansTab({
                     const workColor =
                       entry.type === "休み"
                         ? "work-off"
+                        : entry.workMode === "社外応援"
+                          ? "work-support"
                         : entry.businessTrip
                           ? "work-trip"
                           : "work-normal";
@@ -310,6 +312,8 @@ export default function HistoryPlansTab({
             const workColor =
               entry.type === "休み"
                 ? "work-off"
+                : entry.workMode === "社外応援"
+                  ? "work-support"
                 : entry.businessTrip
                   ? "work-trip"
                   : "work-normal";
@@ -383,6 +387,9 @@ export default function HistoryPlansTab({
                   )}
                 </div>
                 <div className="record-extra">
+                  {entry.workMode === "社外応援" && (
+                    <span className="support-badge">社外応援</span>
+                  )}
                   {entry.businessTrip && (
                     <span className="trip-badge">
                       出張・夜：{entry.dinnerType || "未選択"}

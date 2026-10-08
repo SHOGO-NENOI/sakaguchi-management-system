@@ -85,8 +85,8 @@ import {
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.14";
-const APP_UPDATED_AT = "2026年10月4日";
+const APP_VERSION = "2.5.15";
+const APP_UPDATED_AT = "2026年10月8日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -130,7 +130,7 @@ function appsScriptCode(syncKey: string) {
   return `const SYNC_KEY = ${JSON.stringify(syncKey)};
 const SPREADSHEET_NAME = "坂口商会勤怠記録データ";
 const SHEET_NAME = "勤務記録";
-const HEADERS = ["記録ID", "日付", "勤務区分", "出勤時刻", "退勤時刻", "場所", "現場名", "住所", "緯度・経度", "作業者", "作業内容", "メモ", "出張", "夜ご飯", "更新日時", "記録状態", "宿泊ホテル"];
+const HEADERS = ["記録ID", "日付", "勤務区分", "出勤時刻", "退勤時刻", "場所", "現場名", "住所", "緯度・経度", "作業者", "作業内容", "メモ", "勤務形態", "夜ご飯", "更新日時", "記録状態", "宿泊ホテル"];
 
 function doPost(e) {
   try {
@@ -196,7 +196,7 @@ function syncSheetRow(sheet, data) {
     if (foundIndex >= 0) sheet.deleteRow(rowNumber);
     return;
   }
-  const row = [recordId, data.date, data.workType, data.start, data.end, data.location, data.site, data.address, data.coordinates, data.personnelNames, data.work, data.note, data.businessTrip ? "あり" : "なし", data.dinnerType, new Date(), data.recordStatus || "実績", data.hotelName || ""];
+  const row = [recordId, data.date, data.workType, data.start, data.end, data.location, data.site, data.address, data.coordinates, data.personnelNames, data.work, data.note, data.workMode || (data.businessTrip ? "出張" : "通常勤務"), data.dinnerType, new Date(), data.recordStatus || "実績", data.hotelName || ""];
   sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
   sheet.autoResizeColumns(1, HEADERS.length);
 }

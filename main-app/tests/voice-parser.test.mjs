@@ -22,7 +22,18 @@ test("登録済み現場を含む一括音声入力を読み取る", () => {
   assert.equal(result.end, "17:00");
   assert.equal(result.personnelNames, "子野井");
   assert.deepEqual(result.work, ["草刈り"]);
-  assert.equal(result.businessTrip, true);
+  assert.equal(result.workMode, "出張");
+});
+
+test("社外応援を勤務形態として読み取る", () => {
+  const result = parseAttendanceVoice(
+    "明日、熊本市、山田様邸、8時から17時、子野井、剪定、社外応援",
+    [],
+    workers,
+    works,
+    baseDate,
+  );
+  assert.equal(result.workMode, "社外応援");
 });
 
 test("未登録の現場名と朝・夕方の時刻を読み取る", () => {

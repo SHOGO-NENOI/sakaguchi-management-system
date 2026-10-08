@@ -54,7 +54,7 @@ export async function ensureSpreadsheet() {
   const result = await response.json() as { spreadsheetId: string; spreadsheetUrl: string };
   const db = await getDb();
   await db.update(googleOAuthSettings).set({ spreadsheetId: result.spreadsheetId, spreadsheetUrl: result.spreadsheetUrl }).where(eq(googleOAuthSettings.id, 1));
-  const headers = [["記録ID", "日付", "記録状態", "勤務区分", "開始", "終了", "場所", "現場名", "住所", "緯度経度", "作業者", "作業内容", "メモ", "出張", "夜ご飯", "宿泊ホテル", "更新日時"]];
+  const headers = [["記録ID", "日付", "記録状態", "勤務区分", "開始", "終了", "場所", "現場名", "住所", "緯度経度", "作業者", "作業内容", "メモ", "勤務形態", "夜ご飯", "宿泊ホテル", "更新日時"]];
   await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${result.spreadsheetId}/values/${encodeURIComponent("勤務記録!A1:Q1")}?valueInputOption=RAW`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: headers }) });
   return { id: result.spreadsheetId, url: result.spreadsheetUrl };
 }
