@@ -3,6 +3,8 @@
 import {
   FormEvent,
   PointerEvent as ReactPointerEvent,
+  Suspense,
+  lazy,
   useEffect,
   useMemo,
   useRef,
@@ -39,13 +41,7 @@ import {
   isBeforeCurrentDate,
   isCurrentUsersPlan,
 } from "@/app/lib/schedule-visibility";
-import ShiftBoardTab from "@/app/components/ShiftBoardTab";
-import SummaryTab from "@/app/components/SummaryTab";
-import ToolsTab from "@/app/components/ToolsTab";
-import HistoryPlansTab from "@/app/components/HistoryPlansTab";
-import SitesTab from "@/app/components/SitesTab";
 import EntryTab from "@/app/components/EntryTab";
-import SettingsTab from "@/app/components/SettingsTab";
 import { compressPhoto } from "@/app/lib/image-compression";
 import { attendanceWarnings } from "@/app/lib/attendance-validation";
 import {
@@ -85,7 +81,14 @@ import {
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 
-const APP_VERSION = "2.5.15";
+const SettingsTab = lazy(() => import("@/app/components/SettingsTab"));
+const SummaryTab = lazy(() => import("@/app/components/SummaryTab"));
+const ShiftBoardTab = lazy(() => import("@/app/components/ShiftBoardTab"));
+const SitesTab = lazy(() => import("@/app/components/SitesTab"));
+const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
+const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
+
+const APP_VERSION = "2.5.16";
 const APP_UPDATED_AT = "2026年10月8日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -499,18 +502,16 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    if (activeTab !== "settings") return;
     const controller = new AbortController();
-    const timer = window.setTimeout(() => {
-      fetch("/api/calendar-settings", { signal: controller.signal })
-        .then((response) => response.json())
-        .then((data) => setCalendarSettings(data.settings))
-        .catch(() => undefined);
-    }, 500);
+    fetch("/api/calendar-settings", { signal: controller.signal })
+      .then((response) => response.json())
+      .then((data) => setCalendarSettings(data.settings))
+      .catch(() => undefined);
     return () => {
-      window.clearTimeout(timer);
       controller.abort();
     };
-  }, []);
+  }, [activeTab]);
 
   useEffect(() => {
     if (plannedSitesSyncedRef.current || !entries.length) return;
@@ -1237,6 +1238,7 @@ export default function Home() {
     siteDocumentFilter,
   ]);
   useEffect(() => {
+    if (activeTab !== "sites") return;
     const coordinates = [
       ...new Map(
         siteCards
@@ -1340,7 +1342,7 @@ export default function Home() {
     return () => {
       cancelled = true;
     };
-  }, [siteCards]);
+  }, [activeTab, siteCards]);
   const groupedSiteCards = useMemo(() => {
     const prefectureGroups = new Map<string, SiteCardData[]>();
     filteredSiteCards.forEach((card) => {
@@ -3597,7 +3599,7 @@ export default function Home() {
       <header className="topbar">
         <div className="brand">
           <span className="brand-mark">
-            <img src="/sakaguchi-icon.png" alt="坂口商会" />
+            <img src="/sakaguchi-header.png" alt="坂口商会" width="128" height="128" />
           </span>
           <div>
             <div className="brand-title">
@@ -3671,6 +3673,7 @@ export default function Home() {
             </button>
           ))}
         </nav>
+        <Suspense fallback={<section className="tab-loading" role="status">画面を読み込んでいます…</section>}>
         {activeTab === "settings" && (
           <SettingsTab
             googleConnection={googleConnection}
@@ -3928,6 +3931,7 @@ export default function Home() {
             remove={remove}
           />
         )}
+        </Suspense>
         <footer>勤務データは自動で保存されます</footer>
       </div>
     </main>

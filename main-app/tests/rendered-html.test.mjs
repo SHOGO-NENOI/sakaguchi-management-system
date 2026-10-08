@@ -88,6 +88,15 @@ test("offers outside-company support as a persisted work mode", async () => {
   assert.match(calendarSync, /`勤務形態：\$\{workMode\(row\)\}`/);
 });
 
+test("keeps the initial screen lightweight", async () => {
+  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  assert.match(page, /const SummaryTab = lazy\(/);
+  assert.match(page, /const SitesTab = lazy\(/);
+  assert.match(page, /const SettingsTab = lazy\(/);
+  assert.match(page, /src="\/sakaguchi-header\.png"/);
+  assert.match(page, /if \(activeTab !== "sites"\) return;/);
+});
+
 test("includes configurable deductions and take-home estimate", async () => {
   const [page, summary, types] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

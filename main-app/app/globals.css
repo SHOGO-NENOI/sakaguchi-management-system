@@ -1221,6 +1221,16 @@ textarea {
   display: grid;
   gap: 8px;
 }
+.tab-loading {
+  margin: 24px 0;
+  padding: 32px 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  background: var(--paper);
+  text-align: center;
+  font-weight: 700;
+}
 .trip-options {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
