@@ -52,7 +52,6 @@ import {
 import type {
   WorkType,
   Entry,
-  CalendarSettings,
   GoogleConnection,
   PaySettings,
   CustomAllowance,
@@ -88,8 +87,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.16";
-const APP_UPDATED_AT = "2026年10月8日";
+const APP_VERSION = "2.5.17";
+const APP_UPDATED_AT = "2026年10月9日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -129,86 +128,6 @@ const FIXED_WORK_OPTIONS = [
 const GARBAGE_DISPOSAL_TRIGGERS = ["剪定", "伐採", "草刈り", "抜根", "その他"];
 const GARBAGE_DISPOSAL_OPTION = "ゴミ処分";
 
-function appsScriptCode(syncKey: string) {
-  return `const SYNC_KEY = ${JSON.stringify(syncKey)};
-const SPREADSHEET_NAME = "坂口商会勤怠記録データ";
-const SHEET_NAME = "勤務記録";
-const HEADERS = ["記録ID", "日付", "勤務区分", "出勤時刻", "退勤時刻", "場所", "現場名", "住所", "緯度・経度", "作業者", "作業内容", "メモ", "勤務形態", "夜ご飯", "更新日時", "記録状態", "宿泊ホテル"];
-
-function doPost(e) {
-  try {
-    const data = JSON.parse(e.postData.contents);
-    if (data.key !== SYNC_KEY) throw new Error("連携キーが違います");
-    const spreadsheet = getAttendanceSpreadsheet();
-    const sheet = getAttendanceSheet(spreadsheet);
-    syncSheetRow(sheet, data);
-    const calendar = CalendarApp.getDefaultCalendar();
-    if (data.eventId) {
-      const oldEvent = calendar.getEventById(data.eventId);
-      if (oldEvent) oldEvent.deleteEvent();
-    }
-    if (data.calendarAction === "delete") return json({ ok: true, eventId: "", spreadsheetUrl: spreadsheet.getUrl() });
-    let event;
-    if (data.allDay) {
-      const startDate = new Date(data.date + "T00:00:00+09:00");
-      const endDate = new Date((data.endDate || data.date) + "T00:00:00+09:00");
-      endDate.setDate(endDate.getDate() + 1);
-      event = calendar.createAllDayEvent(data.title, startDate, endDate, { description: data.description });
-    } else {
-      const start = new Date(data.date + "T" + data.start + ":00+09:00");
-      const end = new Date(data.date + "T" + data.end + ":00+09:00");
-      event = calendar.createEvent(data.title, start, end, { description: data.description });
-    }
-    event.setColor(String(data.color));
-    return json({ ok: true, eventId: event.getId(), spreadsheetUrl: spreadsheet.getUrl() });
-  } catch (error) {
-    return json({ ok: false, error: String(error.message || error) });
-  }
-}
-
-function getAttendanceSpreadsheet() {
-  const properties = PropertiesService.getUserProperties();
-  const savedId = properties.getProperty("ATTENDANCE_SPREADSHEET_ID");
-  if (savedId) {
-    try { return SpreadsheetApp.openById(savedId); } catch (error) { properties.deleteProperty("ATTENDANCE_SPREADSHEET_ID"); }
-  }
-  const spreadsheet = SpreadsheetApp.create(SPREADSHEET_NAME);
-  properties.setProperty("ATTENDANCE_SPREADSHEET_ID", spreadsheet.getId());
-  return spreadsheet;
-}
-
-function getAttendanceSheet(spreadsheet) {
-  let sheet = spreadsheet.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = spreadsheet.getSheets()[0];
-    sheet.setName(SHEET_NAME);
-  }
-  if (sheet.getLastRow() === 0) sheet.appendRow(HEADERS);
-  sheet.setFrozenRows(1);
-  sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]).setFontWeight("bold").setBackground("#dcefe8");
-  return sheet;
-}
-
-function syncSheetRow(sheet, data) {
-  const recordId = String(data.recordId || "");
-  if (!recordId) throw new Error("記録IDがありません");
-  const ids = sheet.getLastRow() > 1 ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getDisplayValues().flat() : [];
-  const foundIndex = ids.findIndex(function(id) { return String(id) === recordId; });
-  const rowNumber = foundIndex >= 0 ? foundIndex + 2 : sheet.getLastRow() + 1;
-  if (data.sheetAction === "delete") {
-    if (foundIndex >= 0) sheet.deleteRow(rowNumber);
-    return;
-  }
-  const row = [recordId, data.date, data.workType, data.start, data.end, data.location, data.site, data.address, data.coordinates, data.personnelNames, data.work, data.note, data.workMode || (data.businessTrip ? "出張" : "通常勤務"), data.dinnerType, new Date(), data.recordStatus || "実績", data.hotelName || ""];
-  sheet.getRange(rowNumber, 1, 1, row.length).setValues([row]);
-  sheet.autoResizeColumns(1, HEADERS.length);
-}
-
-function json(value) {
-  return ContentService.createTextOutput(JSON.stringify(value)).setMimeType(ContentService.MimeType.JSON);
-}`;
-}
-
 
 export default function Home() {
   const [currentDate, setCurrentDate] = useState(today);
@@ -236,13 +155,6 @@ export default function Home() {
   const [offlinePendingCount, setOfflinePendingCount] = useState(0);
   const [offlineMessage, setOfflineMessage] = useState("");
   const [error, setError] = useState("");
-  const [calendarSettings, setCalendarSettings] = useState<CalendarSettings>({
-    webhookUrl: "",
-    syncKey: "",
-    enabled: false,
-  });
-  const [showCalendarSetup, setShowCalendarSetup] = useState(false);
-  const [calendarMessage, setCalendarMessage] = useState("");
   const [googleConnection, setGoogleConnection] = useState<GoogleConnection>({
     configured: false,
     connected: false,
@@ -410,26 +322,38 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
+    let cachedEtag = "";
     try {
       const cached = localStorage.getItem("sakaguchi-entries-cache-v1");
       if (cached) setEntries(JSON.parse(cached));
+      cachedEtag = localStorage.getItem("sakaguchi-entries-etag-v1") || "";
     } catch {
       /* キャッシュが壊れていても最新データを取得する */
     }
     setReady(true);
     const controller = new AbortController();
-    fetch("/api/entries", { signal: controller.signal })
+    fetch("/api/entries", {
+      signal: controller.signal,
+      headers: cachedEtag ? { "If-None-Match": cachedEtag } : undefined,
+    })
       .then(async (response) => {
+        if (response.status === 304) return null;
         if (!response.ok) throw new Error("履歴を読み込めませんでした");
-        return response.json();
+        return {
+          data: await response.json() as { entries: Entry[] },
+          etag: response.headers.get("etag") || "",
+        };
       })
-      .then((data) => {
-        setEntries(data.entries);
+      .then((result) => {
+        if (!result) return;
+        setEntries(result.data.entries);
         try {
           localStorage.setItem(
             "sakaguchi-entries-cache-v1",
-            JSON.stringify(data.entries),
+            JSON.stringify(result.data.entries),
           );
+          if (result.etag)
+            localStorage.setItem("sakaguchi-entries-etag-v1", result.etag);
         } catch {
           /* 保存容量不足でも通常動作を続ける */
         }
@@ -501,17 +425,6 @@ export default function Home() {
     };
   }, []);
 
-  useEffect(() => {
-    if (activeTab !== "settings") return;
-    const controller = new AbortController();
-    fetch("/api/calendar-settings", { signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => setCalendarSettings(data.settings))
-      .catch(() => undefined);
-    return () => {
-      controller.abort();
-    };
-  }, [activeTab]);
 
   useEffect(() => {
     if (plannedSitesSyncedRef.current || !entries.length) return;
@@ -2009,26 +1922,6 @@ export default function Home() {
     );
   }
 
-  async function saveCalendarSettings() {
-    setCalendarMessage("保存しています…");
-    const response = await fetch("/api/calendar-settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(calendarSettings),
-    });
-    const data = await response.json();
-    if (!response.ok) {
-      setCalendarMessage(data.error || "設定を保存できませんでした");
-      return;
-    }
-    setCalendarSettings(data.settings);
-    setCalendarMessage(
-      data.settings.enabled
-        ? "Googleカレンダーの自動連携を有効にしました"
-        : "設定を保存しました",
-    );
-  }
-
   async function saveGoogleConnectionSettings() {
     setGoogleConnectionMessage("安全に保存しています…");
     const response = await fetch("/api/google/settings", {
@@ -2246,17 +2139,6 @@ export default function Home() {
       );
     else
       setSyncManagerMessage(`${data.deleted.length}件をごみ箱へ移動しました`);
-  }
-
-  function generateSyncKey() {
-    const bytes = new Uint8Array(24);
-    crypto.getRandomValues(bytes);
-    setCalendarSettings((current) => ({
-      ...current,
-      syncKey: Array.from(bytes, (byte) =>
-        byte.toString(16).padStart(2, "0"),
-      ).join(""),
-    }));
   }
 
   async function enableNotifications() {

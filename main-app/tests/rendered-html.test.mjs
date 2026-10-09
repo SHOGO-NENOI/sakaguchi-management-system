@@ -89,12 +89,19 @@ test("offers outside-company support as a persisted work mode", async () => {
 });
 
 test("keeps the initial screen lightweight", async () => {
-  const page = await readFile(new URL("../app/page.tsx", import.meta.url), "utf8");
+  const [page, entriesApi] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/route.ts", import.meta.url), "utf8"),
+  ]);
   assert.match(page, /const SummaryTab = lazy\(/);
   assert.match(page, /const SitesTab = lazy\(/);
   assert.match(page, /const SettingsTab = lazy\(/);
   assert.match(page, /src="\/sakaguchi-header\.png"/);
   assert.match(page, /if \(activeTab !== "sites"\) return;/);
+  assert.match(page, /"If-None-Match": cachedEtag/);
+  assert.match(page, /response\.status === 304/);
+  assert.match(entriesApi, /status: 304/);
+  assert.match(entriesApi, /ETag: etag/);
 });
 
 test("includes configurable deductions and take-home estimate", async () => {

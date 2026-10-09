@@ -71,7 +71,13 @@ export async function GET(request: Request) {
   await db.update(attendanceEntries).set({ workType: "休み" }).where(eq(attendanceEntries.workType, "欠勤"));
   const trash = new URL(request.url).searchParams.get("trash") === "1";
   const rows = await db.select().from(attendanceEntries).where(trash ? ne(attendanceEntries.deletedAt, "") : eq(attendanceEntries.deletedAt, "")).orderBy(desc(attendanceEntries.workDate), desc(attendanceEntries.id));
-  return Response.json({ entries: rows.map(mapEntry) });
+  const newest = rows.reduce((value, row) => row.updatedAt > value ? row.updatedAt : value, "");
+  const etag = `"entries-${trash ? "trash" : "active"}-${rows.length}-${newest || "initial"}"`;
+  const headers = { "Cache-Control": "private, no-cache", ETag: etag };
+  if (request.headers.get("if-none-match") === etag) {
+    return new Response(null, { status: 304, headers });
+  }
+  return Response.json({ entries: rows.map(mapEntry) }, { headers });
 }
 
 export async function POST(request: Request) {
