@@ -695,7 +695,7 @@ export default function EntryTab({
                               </div>
                               {supportPersonnelNames.length > 0 && (
                                 <div className="support-personnel-options">
-                                  <small>応援者</small>
+                                  <small>その他</small>
                                   <div>
                                     {supportPersonnelNames.map((name) => (
                                       <button

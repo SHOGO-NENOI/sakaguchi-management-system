@@ -151,7 +151,7 @@ test("separates regular workers and supporters and carries site addresses into p
   assert.match(page, /DEFAULT_SUPPORT_PERSONNEL_NAMES = \["下岸"\]/);
   assert.match(page, /addresses\[index\] = matched\.address/);
   assert.match(page, /function createPlanForSite\(card: SiteCardData\)/);
-  assert.match(entryTab, />応援者</);
+  assert.match(entryTab, />その他</);
   assert.match(sitesTab, /＋ 予定を追加/);
 });
 

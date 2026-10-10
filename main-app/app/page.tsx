@@ -87,8 +87,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.17";
-const APP_UPDATED_AT = "2026年10月9日";
+const APP_VERSION = "2.5.18";
+const APP_UPDATED_AT = "2026年10月10日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
