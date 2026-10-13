@@ -87,8 +87,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.18";
-const APP_UPDATED_AT = "2026年10月10日";
+const APP_VERSION = "2.5.19";
+const APP_UPDATED_AT = "2026年10月13日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -1019,6 +1019,9 @@ export default function Home() {
   }, [completedYearEntries]);
   const siteCards = useMemo(() => {
     const cards = new Map<string, SiteCardData>();
+    const archivedSiteKeys = new Set(
+      siteMasters.filter((master) => master.archivedAt).map(siteCardKey),
+    );
     siteMasters
       .filter((master) => !master.archivedAt)
       .forEach((master) => {
@@ -1049,6 +1052,7 @@ export default function Home() {
           .filter((row) => row.site)
           .forEach((row) => {
             const key = siteCardKey(row);
+            if (archivedSiteKeys.has(key)) return;
             const card = cards.get(key) ?? {
               site: row.site,
               location: row.location,
@@ -1077,6 +1081,7 @@ export default function Home() {
       .forEach((entry) =>
         entrySiteRows(entry).forEach((row) => {
           const key = siteCardKey(row);
+          if (archivedSiteKeys.has(key)) return;
           const card = cards.get(key) ?? {
             site: row.site,
             location: row.location,
@@ -3447,6 +3452,58 @@ export default function Home() {
     } else setMasterMessage(data.error || "復元できませんでした");
   }
 
+  async function deleteSite(card: SiteCardData) {
+    if (!window.confirm(
+      `「${card.site || "この現場"}」を現場一覧から削除しますか？\n過去の勤務記録と資料は残り、設定の「削除データの復元」から戻せます。`,
+    )) return;
+    setSiteLocationMessage("削除しています…");
+    try {
+      let master = card.masterId
+        ? siteMasters.find((site) => site.id === card.masterId)
+        : undefined;
+      if (!master) {
+        const createResponse = await fetch("/api/sites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "upsert",
+            site: card.site,
+            location: card.location,
+            address: card.address,
+            coordinates: card.coordinates,
+          }),
+        });
+        const createData = await createResponse.json();
+        if (!createResponse.ok)
+          throw new Error(createData.error || "削除する現場を確認できませんでした");
+        master = createData.site;
+      }
+      if (!master) throw new Error("削除する現場を確認できませんでした");
+      const response = await fetch("/api/sites", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: master.id,
+          action: "archive",
+          expectedUpdatedAt: master.updatedAt,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "現場を削除できませんでした");
+      setSiteMasters((current) => {
+        const exists = current.some((site) => site.id === data.site.id);
+        return exists
+          ? current.map((site) => site.id === data.site.id ? data.site : site)
+          : [...current, data.site];
+      });
+      setEditingSiteNameKey(null);
+      setEditingSiteLocationKey(null);
+      setSiteLocationMessage(`「${data.site.site}」を現場一覧から削除しました`);
+    } catch (error) {
+      setSiteLocationMessage(errorMessage(error, "現場を削除できませんでした"));
+    }
+  }
+
   async function deleteTool(type: "set" | "item", id: number, name: string) {
     if (!window.confirm(`「${name}」を削除しますか？`)) return;
     try {
@@ -3756,6 +3813,7 @@ export default function Home() {
             siteDocumentLoadingKey={siteDocumentLoadingKey}
             siteDocumentMessages={siteDocumentMessages}
             createPlanForSite={createPlanForSite}
+            deleteSite={deleteSite}
           />
         )}
 

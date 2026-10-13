@@ -28,6 +28,7 @@ export async function POST(request: Request) {
       const matched = existing.find((row) => normalized(row.site) === normalized(values.site));
       const now = new Date().toISOString();
       if (matched) {
+        if (matched.archivedAt) return Response.json({ site: matched, created: false, archived: true });
         const merged = {
           site: values.site,
           location: values.location || matched.location,
@@ -43,7 +44,6 @@ export async function POST(request: Request) {
         ) return Response.json({ site: matched, created: false });
         const [site] = await db.update(siteMasters).set({
           ...merged,
-          archivedAt: "",
           updatedAt: now,
         }).where(eq(siteMasters.id, matched.id)).returning();
         await appendAudit({ action: "update", targetType: "site", targetId: site.id, targetName: site.site, before: matched, after: site });
@@ -82,11 +82,16 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
-    const payload = await request.json() as { id?: number; action?: "archive" | "restore" };
+    const payload = await request.json() as { id?: number; action?: "archive" | "restore"; expectedUpdatedAt?: string };
     if (!payload.id || !["archive", "restore"].includes(payload.action ?? "")) throw new Error("対象の現場が見つかりません");
     const db = await getDb();
     const [before] = await db.select().from(siteMasters).where(eq(siteMasters.id, payload.id)).limit(1);
-    const [site] = await db.update(siteMasters).set({ archivedAt: payload.action === "archive" ? new Date().toISOString() : "", updatedAt: new Date().toISOString() }).where(eq(siteMasters.id, payload.id)).returning();
+    if (!before) throw new Error("対象の現場が見つかりません");
+    if (payload.expectedUpdatedAt !== undefined && payload.expectedUpdatedAt !== before.updatedAt) {
+      return Response.json({ error: "別の端末で先に更新されています。画面を再読み込みしてください", conflict: true, site: before }, { status: 409 });
+    }
+    const updatedAt = new Date().toISOString();
+    const [site] = await db.update(siteMasters).set({ archivedAt: payload.action === "archive" ? updatedAt : "", updatedAt }).where(and(eq(siteMasters.id, payload.id), eq(siteMasters.updatedAt, before.updatedAt))).returning();
     if (!site) throw new Error("対象の現場が見つかりません");
     await appendAudit({ action: payload.action === "archive" ? "archive" : "restore", targetType: "site", targetId: site.id, targetName: site.site, before, after: site });
     return Response.json({ site });

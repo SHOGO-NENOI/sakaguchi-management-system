@@ -74,6 +74,7 @@ type SitesTabProps = {
   siteDocumentLoadingKey: string | null;
   siteDocumentMessages: Record<string, string>;
   createPlanForSite: (card: SiteCardData) => void;
+  deleteSite: (card: SiteCardData) => void;
 };
 
 export default function SitesTab({
@@ -123,6 +124,7 @@ export default function SitesTab({
   siteDocumentLoadingKey,
   siteDocumentMessages,
   createPlanForSite,
+  deleteSite,
 }: SitesTabProps) {
   return (
     <details className="site-summary-section collapsible-section" open>
@@ -608,6 +610,13 @@ export default function SitesTab({
                                     }}
                                   >
                                     {editing ? "閉じる" : "編集"}
+                                  </button>
+                                  <button
+                                    className="danger"
+                                    type="button"
+                                    onClick={() => deleteSite(card)}
+                                  >
+                                    削除
                                   </button>
                                 </div>
                                 {editing && (

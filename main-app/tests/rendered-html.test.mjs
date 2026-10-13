@@ -2,13 +2,15 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-test("does not offer a hide action on site cards", async () => {
+test("offers a recoverable delete action instead of a hide action on site cards", async () => {
   const source = await readFile(
     new URL("../app/components/SitesTab.tsx", import.meta.url),
     "utf8",
   );
   assert.doesNotMatch(source, />\s*非表示\s*</);
   assert.doesNotMatch(source, /archiveSite/);
+  assert.match(source, /onClick=\{\(\) => deleteSite\(card\)\}/);
+  assert.match(source, />\s*削除\s*<\/button>/);
 });
 
 test("renders the Sakaguchi attendance metadata", async () => {
