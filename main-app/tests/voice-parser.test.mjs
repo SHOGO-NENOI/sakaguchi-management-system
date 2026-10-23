@@ -36,6 +36,17 @@ test("社外応援を勤務形態として読み取る", () => {
   assert.equal(result.workMode, "社外応援");
 });
 
+test("組み合わせ天気を音声入力から読み取る", () => {
+  const result = parseAttendanceVoice(
+    "今日、熊本市、山田様邸、8時から17時、天気は曇り時々雨",
+    [],
+    workers,
+    works,
+    baseDate,
+  );
+  assert.equal(result.weather, "曇り時々雨");
+});
+
 test("未登録の現場名と朝・夕方の時刻を読み取る", () => {
   const result = parseAttendanceVoice(
     "明日、熊本市、山田様邸、朝8時から夕方5時、清田、剪定",

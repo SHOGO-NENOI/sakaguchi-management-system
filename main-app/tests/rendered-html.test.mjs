@@ -90,6 +90,24 @@ test("offers outside-company support as a persisted work mode", async () => {
   assert.match(calendarSync, /`勤務形態：\$\{workMode\(row\)\}`/);
 });
 
+test("persists weather selections and syncs them to Google", async () => {
+  const [entryTab, entriesApi, schema, operationalSchema, calendarSync] = await Promise.all([
+    readFile(new URL("../app/components/EntryTab.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/lib/operational-schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/entries/google-calendar.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(entryTab, /aria-label="天気"/);
+  assert.match(entryTab, /WEATHER_GROUPS\.map/);
+  assert.match(entriesApi, /weather: row\.weather/);
+  assert.match(entriesApi, /normalizeWeather\(payload\.weather\)/);
+  assert.match(schema, /weather: text\("weather"\)/);
+  assert.match(operationalSchema, /"attendance_entries", "weather"/);
+  assert.match(calendarSync, /`天気：\$\{row\.weather\}`/);
+  assert.match(calendarSync, /勤務記録!R1/);
+});
+
 test("keeps the initial screen lightweight", async () => {
   const [page, entriesApi] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

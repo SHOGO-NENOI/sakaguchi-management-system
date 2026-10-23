@@ -25,6 +25,7 @@ export function ensureOperationalSchema() {
       if (!database) throw new Error("Cloudflare D1を利用できません");
       await addColumnIfMissing(database, "attendance_entries", "updated_at", "TEXT NOT NULL DEFAULT ''");
       await addColumnIfMissing(database, "attendance_entries", "work_mode", "TEXT NOT NULL DEFAULT '通常勤務'");
+      await addColumnIfMissing(database, "attendance_entries", "weather", "TEXT NOT NULL DEFAULT ''");
       await database.prepare("UPDATE attendance_entries SET work_mode = '出張' WHERE business_trip = 1 AND work_mode = '通常勤務'").run();
       await addColumnIfMissing(database, "site_documents", "archived_at", "TEXT NOT NULL DEFAULT ''");
       await database.prepare(`

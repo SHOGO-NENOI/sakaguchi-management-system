@@ -13,6 +13,7 @@ export type Entry = {
   personnelNames: string;
   work: string;
   note: string;
+  weather: string;
   workMode: WorkMode;
   businessTrip: boolean;
   dinnerType: string;

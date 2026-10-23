@@ -87,8 +87,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.19";
-const APP_UPDATED_AT = "2026年10月13日";
+const APP_VERSION = "2.5.20";
+const APP_UPDATED_AT = "2026年10月23日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -2744,7 +2744,7 @@ export default function Home() {
 
   function edit(entry: Entry) {
     const { id, ...values } = entry;
-    setForm(values);
+    setForm({ ...emptyEntry(), ...values });
     setOffEndDate(entry.date);
     setEditingId(id);
     setEntryIntent(null);

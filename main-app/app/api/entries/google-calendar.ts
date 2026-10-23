@@ -19,6 +19,7 @@ function workMode(row: EntryRow) { return row.workMode === "出張" || row.workM
 export async function syncSheet(row: EntryRow, action: "upsert" | "delete") {
   const spreadsheet = await ensureSpreadsheet();
   await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent("勤務記録!N1")}?valueInputOption=RAW`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: [["勤務形態"]] }) });
+  await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent("勤務記録!R1")}?valueInputOption=RAW`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values: [["天気"]] }) });
   const idsResponse = await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent("勤務記録!A:A")}`);
   const ids = (await idsResponse.json() as { values?: string[][] }).values ?? [];
   const rowNumber = ids.findIndex((item) => item[0] === String(row.id)) + 1;
@@ -32,11 +33,11 @@ export async function syncSheet(row: EntryRow, action: "upsert" | "delete") {
     return spreadsheet.url;
   }
   const status = calendarRecordStatus(row.workDate, todayInJapan());
-  const values = [[String(row.id), row.workDate, status, normalizedWorkType(row.workType), row.startTime, row.endTime, row.location, row.site, row.address, row.coordinates, row.personnelNames, row.work, row.note, workMode(row), row.dinnerType, row.hotelName, new Date().toISOString()]];
+  const values = [[String(row.id), row.workDate, status, normalizedWorkType(row.workType), row.startTime, row.endTime, row.location, row.site, row.address, row.coordinates, row.personnelNames, row.work, row.note, workMode(row), row.dinnerType, row.hotelName, new Date().toISOString(), row.weather]];
   if (rowNumber > 0) {
-    await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent(`勤務記録!A${rowNumber}:Q${rowNumber}`)}?valueInputOption=USER_ENTERED`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) });
+    await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent(`勤務記録!A${rowNumber}:R${rowNumber}`)}?valueInputOption=USER_ENTERED`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) });
   } else {
-    await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent("勤務記録!A:Q")}:append?valueInputOption=USER_ENTERED`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) });
+    await googleFetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheet.id}/values/${encodeURIComponent("勤務記録!A:R")}:append?valueInputOption=USER_ENTERED`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ values }) });
   }
   return spreadsheet.url;
 }
@@ -63,7 +64,7 @@ export async function syncGoogleCalendar(row: EntryRow, action: "upsert" | "dele
     const identity = { private: { sakaguchiEntryId: String(row.id), sakaguchiSiteIndex: String(targetIndex), sakaguchiSource: "attendance-app" } };
     const event = isOff ? { summary: row.note.trim() || "休み", colorId: "2", start: { date: row.workDate }, end: { date: addDay(options.calendarEndDate || row.workDate) }, extendedProperties: identity } : {
       summary: calendarEventTitle(place, target.site.work || workType), location: target.site.address || target.site.coordinates || target.site.location,
-      description: [`記録状態：${status}`, `勤務区分：${workType}`, `勤務形態：${workMode(row)}`, `現場：${place}`, target.site.work && `作業内容：${target.site.work}`, target.site.address && `住所：${target.site.address}`, target.site.coordinates && `緯度・経度：${target.site.coordinates}`, target.site.personnelNames && `作業者：${target.site.personnelNames}`, row.businessTrip && `出張・夜ご飯：${row.dinnerType || "未選択"}`, row.businessTrip && row.hotelName && `宿泊ホテル：${row.hotelName}`, target.site.note && `メモ：${target.site.note}`].filter(Boolean).join("\n"), colorId: row.businessTrip ? "5" : "7",
+      description: [`記録状態：${status}`, `勤務区分：${workType}`, `勤務形態：${workMode(row)}`, row.weather && `天気：${row.weather}`, `現場：${place}`, target.site.work && `作業内容：${target.site.work}`, target.site.address && `住所：${target.site.address}`, target.site.coordinates && `緯度・経度：${target.site.coordinates}`, target.site.personnelNames && `作業者：${target.site.personnelNames}`, row.businessTrip && `出張・夜ご飯：${row.dinnerType || "未選択"}`, row.businessTrip && row.hotelName && `宿泊ホテル：${row.hotelName}`, target.site.note && `メモ：${target.site.note}`].filter(Boolean).join("\n"), colorId: row.businessTrip ? "5" : "7",
       start: { dateTime: `${row.workDate}T${target.site.start}:00+09:00`, timeZone: "Asia/Tokyo" }, end: { dateTime: `${row.workDate}T${target.site.end}:00+09:00`, timeZone: "Asia/Tokyo" }, extendedProperties: identity,
     };
     const endpoint = target.id ? `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(target.id)}` : "https://www.googleapis.com/calendar/v3/calendars/primary/events";

@@ -10,6 +10,7 @@ export type AttendanceVoiceResult = {
   date?: string;
   type?: "1日" | "半日" | "休み";
   workMode?: "通常勤務" | "出張" | "社外応援";
+  weather?: string;
   site?: VoiceSiteOption;
   siteName?: string;
   location?: string;
@@ -109,11 +110,15 @@ export function parseAttendanceVoice(
   const labelledWork = labelled(transcript, "作業内容") || labelled(transcript, "作業");
   const date = parseVoiceDate(transcript, baseDate);
   const workMode = normalized.includes("社外応援") ? "社外応援" : normalized.includes("出張") ? "出張" : undefined;
+  const weather = normalized.match(
+    /(?:晴れ|曇り|雨|雪)(?:のち|時々|一時)(?:晴れ|曇り|雨|雪)|みぞれ|雷雨|強風|晴れ|曇り|雨|雪/,
+  )?.[0];
   return {
     transcript,
     ...(date ? { date } : {}),
     ...(type ? { type } : {}),
     ...(workMode ? { workMode } : {}),
+    ...(weather ? { weather } : {}),
     ...(matchedSite ? { site: matchedSite } : {}),
     ...(siteName ? { siteName } : {}),
     ...(location ? { location } : {}),
@@ -128,6 +133,7 @@ export function voiceResultLines(result: AttendanceVoiceResult) {
     result.date && `日付：${result.date}`,
     result.type && `勤務区分：${result.type}`,
     result.workMode && `勤務形態：${result.workMode}`,
+    result.weather && `天気：${result.weather}`,
     result.location && `場所：${result.location}`,
     result.siteName && `現場名：${result.siteName}`,
     result.start && `開始：${result.start}`,

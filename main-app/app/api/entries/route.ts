@@ -4,6 +4,7 @@ import { attendanceEntries } from "../../../db/schema";
 import { syncGoogleCalendar } from "./google-calendar";
 import { appendAudit } from "../../lib/audit";
 import { ensureOperationalSchema } from "../../lib/operational-schema";
+import { normalizeWeather } from "../../lib/weather";
 
 type Payload = {
   id?: number;
@@ -18,6 +19,7 @@ type Payload = {
   personnelNames?: string;
   work?: string;
   note?: string;
+  weather?: string;
   workMode?: string;
   businessTrip?: boolean;
   dinnerType?: string;
@@ -38,6 +40,7 @@ const mapEntry = (row: typeof attendanceEntries.$inferSelect) => ({
   start: row.startTime, end: row.endTime, site: row.site, location: row.location,
   address: row.address, coordinates: row.coordinates,
   personnelNames: row.personnelNames, work: row.work, note: row.note,
+  weather: row.weather,
   workMode: normalizedWorkMode(row.workMode, row.businessTrip),
   businessTrip: row.businessTrip, dinnerType: normalizedDinnerType(row.dinnerType), hotelName: row.hotelName,
   googleEventId: row.googleEventId,
@@ -56,6 +59,7 @@ function values(payload: Payload) {
     address: payload.address?.trim() ?? "", coordinates: payload.coordinates?.trim() ?? "",
     personnelNames: payload.personnelNames?.trim() ?? "",
     work: payload.work?.trim() ?? "", note: workType === "休み" ? payload.note?.trim() || "休み" : payload.note?.trim() ?? "",
+    weather: workType === "休み" ? "" : normalizeWeather(payload.weather),
     workMode,
     businessTrip: workMode === "出張",
     dinnerType: workMode === "出張" ? payload.dinnerType ?? "" : "",

@@ -18,6 +18,7 @@ import {
   type VoiceSiteOption,
 } from "@/app/lib/attendance-voice";
 import type { Entry, WorkType } from "@/app/types";
+import { WEATHER_GROUPS } from "@/app/lib/weather";
 
 type EntryTabProps = {
   editingId: string | null;
@@ -218,6 +219,7 @@ export default function EntryTab({
       ...form,
       date: voiceResult.date ?? form.date,
       type: voiceResult.type ?? form.type,
+      weather: voiceResult.weather ?? form.weather,
       workMode: voiceResult.workMode ?? form.workMode,
       businessTrip: (voiceResult.workMode ?? form.workMode) === "出張",
       site: replaceFirst(form.site, voiceResult.siteName ?? matched?.site),
@@ -365,6 +367,7 @@ export default function EntryTab({
                             personnelNames: "",
                             work: "",
                             note: "",
+                            weather: "",
                             workMode: "通常勤務",
                             businessTrip: false,
                             dinnerType: "",
@@ -478,6 +481,24 @@ export default function EntryTab({
                 </button>
               </div>
             </fieldset>
+            <label className="wide weather-field">
+              <span>天気 <em>任意</em></span>
+              <select
+                aria-label="天気"
+                value={form.weather}
+                onChange={(event) => setForm({ ...form, weather: event.target.value })}
+              >
+                <option value="">選択してください</option>
+                {WEATHER_GROUPS.map((group) => (
+                  <optgroup key={group.label} label={group.label}>
+                    {group.options.map((weather) => (
+                      <option key={weather} value={weather}>{weather}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <small>「晴れのち雨」「曇り時々雨」なども選べます</small>
+            </label>
             <fieldset className="site-field">
               <legend>
                 場所・現場情報 <em>最大5か所・履歴から選択可</em>

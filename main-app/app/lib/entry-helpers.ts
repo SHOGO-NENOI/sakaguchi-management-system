@@ -534,6 +534,7 @@ export const emptyEntry = (): Omit<Entry, "id"> => ({
   personnelNames: "",
   work: "",
   note: "",
+  weather: "",
   workMode: "通常勤務",
   businessTrip: false,
   dinnerType: "",

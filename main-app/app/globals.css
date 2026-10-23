@@ -1216,6 +1216,28 @@ textarea {
   border-radius: 12px;
   background: #f8faf9;
 }
+.weather-field {
+  display: grid;
+  gap: 7px;
+  padding: 14px 16px;
+  border: 1px solid #dfe7e3;
+  border-radius: 12px;
+  background: #f8faf9;
+}
+.weather-field > span {
+  color: #53615d;
+  font-size: 12px;
+  font-weight: 800;
+}
+.weather-field select {
+  width: 100%;
+  min-height: 44px;
+  font-weight: 700;
+}
+.weather-field small {
+  color: var(--muted);
+  font-size: 10px;
+}
 .trip-options,
 .dinner-options {
   display: grid;
@@ -5654,6 +5676,7 @@ select,
 .site-time-fields,
 .daily-extra-summary,
 .trip-field,
+.weather-field,
 .site-work-field,
 .personnel-options,
 .last-visit,

@@ -15,6 +15,7 @@ import {
 } from "@/app/lib/entry-helpers";
 import type { AppTab, Entry, SiteDocument } from "@/app/types";
 import { isPlanEnded } from "@/app/lib/schedule-visibility";
+import { weatherIcon } from "@/app/lib/weather";
 
 type PlanSection = { id: string; title: string; date: string; entries: Entry[] };
 type CalendarDay = { day: number; date: string; entries: Entry[] } | null;
@@ -241,7 +242,7 @@ export default function HistoryPlansTab({
                         {entry.type !== "休み" && (
                           <small>
                             {planned
-                              ? entry.type
+                              ? [entry.type, entry.weather && `${weatherIcon(entry.weather)} ${entry.weather}`].filter(Boolean).join("・")
                               : [
                                   extra.early
                                     ? `早 ${formatMinutes(extra.early)}`
@@ -249,6 +250,7 @@ export default function HistoryPlansTab({
                                   extra.overtime
                                     ? `残 ${formatMinutes(extra.overtime)}`
                                     : "",
+                                  entry.weather && `${weatherIcon(entry.weather)} ${entry.weather}`,
                                 ]
                                   .filter(Boolean)
                                   .join("・")}
@@ -387,6 +389,9 @@ export default function HistoryPlansTab({
                   )}
                 </div>
                 <div className="record-extra">
+                  {entry.weather && (
+                    <span className="weather-badge">{weatherIcon(entry.weather)} 天気：{entry.weather}</span>
+                  )}
                   {entry.workMode === "社外応援" && (
                     <span className="support-badge">社外応援</span>
                   )}
