@@ -59,6 +59,16 @@ test("renders the Sakaguchi attendance metadata", async () => {
   assert.match(html, /保存前に必ず入力してください/i);
 });
 
+test("provides a public Google user data privacy policy", async () => {
+  const privacy = await readFile(new URL("../app/privacy/page.tsx", import.meta.url), "utf8");
+  assert.match(privacy, /プライバシーポリシー/);
+  assert.match(privacy, /Googleカレンダー/);
+  assert.match(privacy, /Googleスプレッドシート/);
+  assert.match(privacy, /Google Drive/);
+  assert.match(privacy, /Limited Use/);
+  assert.match(privacy, /Google連携を解除した場合/);
+});
+
 test("includes offline, backup, restore, audit, and concurrency safeguards", async () => {
   const [page, entriesApi, worker, config, schema] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
