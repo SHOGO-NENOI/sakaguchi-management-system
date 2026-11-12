@@ -79,6 +79,7 @@ import {
 } from "@/app/lib/overtime";
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
+import { resolveOvertimePay, tripAllowanceUnits } from "@/app/lib/payroll";
 
 const SettingsTab = lazy(() => import("@/app/components/SettingsTab"));
 const SummaryTab = lazy(() => import("@/app/components/SummaryTab"));
@@ -87,7 +88,7 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.21";
+const APP_VERSION = "2.5.22";
 const APP_UPDATED_AT = "2026年11月12日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -98,7 +99,10 @@ const defaultPaySettings: PaySettings = {
   fullDayBreakMinutes: "60",
   halfDayBreakMinutes: "0",
   overtimeMultiplier: "1.25",
+  fixedOvertimeAllowance: "",
   tripAllowance: "1500",
+  tripAllowanceBasis: "trip-day",
+  selfDinnerAllowance: "1500",
   customAllowances: [],
   healthInsurance: "",
   pension: "",
@@ -112,6 +116,7 @@ const defaultPaySettings: PaySettings = {
   residentTaxAnnualIncome: "",
   residentTaxDependents: "0",
   residentTax: "",
+  otherDeductionsLabel: "その他控除",
   otherDeductions: "",
 };
 
@@ -864,6 +869,15 @@ export default function Home() {
     );
     return months.size;
   }, [summaryEntries]);
+  const summaryHotelNights = useMemo(
+    () =>
+      new Set(
+        summaryEntries
+          .filter((entry) => entry.businessTrip && entry.hotelName.trim())
+          .map((entry) => entry.date),
+      ).size,
+    [summaryEntries],
+  );
   const estimatedPay = useMemo(() => {
     const dailyRate = Number(paySettings.dailyRate);
     const standardHours = Number(paySettings.standardHours);
@@ -872,13 +886,26 @@ export default function Home() {
     if (!dailyRate || !standardHours || !multiplier) return null;
     const hourlyRate = dailyRate / standardHours;
     const base = Math.round(summary.days * dailyRate);
-    const overtimePay = Math.round(
+    const calculatedOvertimePay = Math.round(
       (weeklyOvertimeMinutes / 60) * hourlyRate * multiplier,
     );
-    const tripAllowance = Math.round(
-      summary.trips * (tripAllowancePerDay || 0),
+    const overtime = resolveOvertimePay(
+      calculatedOvertimePay,
+      Number(paySettings.fixedOvertimeAllowance) || 0,
+      workedMonthCount,
     );
-    const selfDinnerAllowance = Math.round(summary.selfDinner * 1_500);
+    const overtimePay = overtime.amount;
+    const allowanceUnits = tripAllowanceUnits(
+      paySettings.tripAllowanceBasis,
+      summary.trips,
+      summaryHotelNights,
+    );
+    const tripAllowance = Math.round(
+      allowanceUnits * (tripAllowancePerDay || 0),
+    );
+    const selfDinnerAllowance = Math.round(
+      summary.selfDinner * (Number(paySettings.selfDinnerAllowance) || 0),
+    );
     const customAllowances = paySettings.customAllowances
       .filter((allowance) => allowance.name.trim() && Number(allowance.amount))
       .map((allowance) => ({
@@ -931,7 +958,7 @@ export default function Home() {
       { key: "employmentInsurance", name: paySettings.autoEmploymentInsurance ? "雇用保険（自動計算）" : "雇用保険", monthly: employmentInsurance },
       { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動概算）" : "所得税", monthly: incomeTax },
       { key: "residentTax", name: paySettings.autoResidentTax ? "熊本市住民税（自動概算）" : "住民税", monthly: residentTax },
-      { key: "otherDeductions", name: "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
+      { key: "otherDeductions", name: paySettings.otherDeductionsLabel.trim() || "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
     ].map((deduction) => ({
       ...deduction,
       amount: Math.round(deduction.monthly * deductionMonths),
@@ -943,6 +970,7 @@ export default function Home() {
     return {
       base,
       overtimePay,
+      fixedOvertimeApplied: overtime.fixedApplied,
       tripAllowance,
       selfDinnerAllowance,
       customAllowances,
@@ -956,6 +984,7 @@ export default function Home() {
     summary.days,
     summary.trips,
     summary.selfDinner,
+    summaryHotelNights,
     weeklyOvertimeMinutes,
     workedMonthCount,
     summaryPeriod,

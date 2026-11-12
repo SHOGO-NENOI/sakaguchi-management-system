@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "プライバシーポリシー | 坂口商会勤怠管理アプリ",
@@ -65,7 +66,7 @@ export default function PrivacyPolicyPage() {
         <p>お問い合わせは、Google OAuth同意画面に表示されるユーザーサポート窓口からお願いします。</p>
 
         <p className="legal-updated">制定日：2026年11月12日</p>
-        <a className="legal-back" href="/">アプリへ戻る</a>
+        <Link className="legal-back" href="/">アプリへ戻る</Link>
       </article>
     </main>
   );

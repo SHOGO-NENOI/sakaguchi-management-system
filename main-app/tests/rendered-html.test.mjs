@@ -146,8 +146,12 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /厚生年金/);
   assert.match(types, /residentTax: string/);
   assert.match(page, /estimateMonthlyIncomeTax/);
-  assert.match(page, /summary\.selfDinner \* 1_500/);
+  assert.match(page, /paySettings\.selfDinnerAllowance/);
   assert.match(summary, /自費食事分の出張手当/);
+  assert.match(summary, /固定時間外手当/);
+  assert.match(summary, /出張手当の数え方/);
+  assert.match(summary, /宿泊日数/);
+  assert.match(summary, /その他控除の名称/);
   assert.match(summary, /所得税を自動計算する/);
   assert.match(page, /estimateKumamotoResidentTax/);
   assert.match(summary, /熊本市の住民税を自動計算する/);

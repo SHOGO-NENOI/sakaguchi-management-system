@@ -33,6 +33,7 @@ type SummaryTabProps = {
   estimatedPay: {
     base: number;
     overtimePay: number;
+    fixedOvertimeApplied: boolean;
     tripAllowance: number;
     selfDinnerAllowance: number;
     customAllowances: { id: string; name: string; amount: number }[];
@@ -322,7 +323,10 @@ export default function SummaryTab({
             </span>
             {estimatedPay.overtimePay > 0 && (
               <span>
-                時間外手当 ¥{estimatedPay.overtimePay.toLocaleString("ja-JP")}
+                {estimatedPay.fixedOvertimeApplied
+                  ? "時間外手当（固定額を適用）"
+                  : "時間外手当"}{" "}
+                ¥{estimatedPay.overtimePay.toLocaleString("ja-JP")}
               </span>
             )}
             {estimatedPay.tripAllowance > 0 && (
@@ -458,7 +462,26 @@ export default function SummaryTab({
               </div>
             </label>
             <label>
-              <span>出張手当（1日あたり）</span>
+              <span>固定時間外手当（1ヶ月あたり）</span>
+              <div className="pay-input-wrap">
+                <b>¥</b>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="100"
+                  placeholder="0"
+                  value={paySettings.fixedOvertimeAllowance}
+                  onChange={(event) => updatePaySettings({
+                    ...paySettings,
+                    fixedOvertimeAllowance: event.target.value,
+                  })}
+                />
+              </div>
+              <small>0の場合は週40時間超過分のみ。設定時は計算額と固定額の高い方を使います</small>
+            </label>
+            <label>
+              <span>出張手当（1回あたり）</span>
               <div className="pay-input-wrap">
                 <b>¥</b>
                 <input
@@ -474,6 +497,37 @@ export default function SummaryTab({
                       tripAllowance: e.target.value,
                     })
                   }
+                />
+              </div>
+            </label>
+            <label>
+              <span>出張手当の数え方</span>
+              <select
+                value={paySettings.tripAllowanceBasis}
+                onChange={(event) => updatePaySettings({
+                  ...paySettings,
+                  tripAllowanceBasis: event.target.value as "trip-day" | "hotel-night",
+                })}
+              >
+                <option value="trip-day">出張日数</option>
+                <option value="hotel-night">宿泊日数</option>
+              </select>
+            </label>
+            <label>
+              <span>自費食事分の出張手当（1回あたり）</span>
+              <div className="pay-input-wrap">
+                <b>¥</b>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  step="100"
+                  placeholder="0"
+                  value={paySettings.selfDinnerAllowance}
+                  onChange={(event) => updatePaySettings({
+                    ...paySettings,
+                    selfDinnerAllowance: event.target.value,
+                  })}
                 />
               </div>
             </label>
@@ -543,10 +597,22 @@ export default function SummaryTab({
                 <strong>毎月の控除額</strong>
                 <small>給与明細の金額を入力すると概算手取りへ反映します</small>
               </div>
+              <label>
+                <span>その他控除の名称</span>
+                <input
+                  type="text"
+                  placeholder="例：子育て支援金"
+                  value={paySettings.otherDeductionsLabel}
+                  onChange={(event) => updatePaySettings({
+                    ...paySettings,
+                    otherDeductionsLabel: event.target.value,
+                  })}
+                />
+              </label>
               {([
                 ["healthInsurance", "健康保険"],
                 ["pension", "厚生年金"],
-                ["otherDeductions", "その他控除"],
+                ["otherDeductions", paySettings.otherDeductionsLabel.trim() || "その他控除"],
               ] as const).map(([key, label]) => (
                 <label key={key}>
                   <span>{label}</span>
@@ -741,7 +807,7 @@ export default function SummaryTab({
               </div>
             </div>
             <p>
-              休憩時間は勤務記録1件につき1回、総労働時間から控除します。時間外労働は、休憩控除後の実働を日曜〜土曜で合計し、40時間を超えた分を土曜日終了後に確定します。早出と17時以降の時間は個別加算せず、この週合計に含めます。自費で夜ご飯を食べた日は、1回につき1,500円を出張手当へ追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
+              休憩時間は勤務記録1件につき1回、総労働時間から控除します。時間外労働は、休憩控除後の実働を日曜〜土曜で合計し、40時間を超えた分を土曜日終了後に確定します。固定時間外手当を設定した場合は、週40時間超過分と固定額の高い方を支給額へ使います。出張手当は出張日数または宿泊日数から選択して計算し、自費食事分は設定額を追加します。雇用保険料は令和8年度の労働者負担率（一般0.5％、建設・農林水産・清酒製造0.6％）を支給額へ掛けて概算します。所得税の自動計算は、令和8年分の月額表・甲欄の電算機計算方式（所得税・復興特別所得税）による概算です。熊本市の住民税は、前年の給与年収、16歳以上の一般扶養人数、設定済みの社会保険料から、市民税・県民税・森林環境税を概算します。実費精算や各種控除の扱いにより、実際の給与明細・税額通知と差が出る場合があります。
             </p>
           </div>
         </details>

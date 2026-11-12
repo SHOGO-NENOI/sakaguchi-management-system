@@ -53,7 +53,10 @@ export type PaySettings = {
   fullDayBreakMinutes: string;
   halfDayBreakMinutes: string;
   overtimeMultiplier: string;
+  fixedOvertimeAllowance: string;
   tripAllowance: string;
+  tripAllowanceBasis: "trip-day" | "hotel-night";
+  selfDinnerAllowance: string;
   customAllowances: CustomAllowance[];
   healthInsurance: string;
   pension: string;
@@ -67,6 +70,7 @@ export type PaySettings = {
   residentTaxAnnualIncome: string;
   residentTaxDependents: string;
   residentTax: string;
+  otherDeductionsLabel: string;
   otherDeductions: string;
 };
 export type SiteCardData = {
