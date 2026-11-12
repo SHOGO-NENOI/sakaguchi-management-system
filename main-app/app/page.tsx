@@ -88,7 +88,7 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.22";
+const APP_VERSION = "2.5.23";
 const APP_UPDATED_AT = "2026年11月12日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -930,6 +930,9 @@ export default function Home() {
     const healthInsurance = Math.max(0, Number(paySettings.healthInsurance) || 0);
     const pension = Math.max(0, Number(paySettings.pension) || 0);
     const averageMonthlyGross = deductionMonths > 0 ? gross / deductionMonths : 0;
+    const averageMonthlyTaxableGross = deductionMonths > 0
+      ? (gross - tripAllowance - selfDinnerAllowance) / deductionMonths
+      : 0;
     const employmentInsurance = paySettings.autoEmploymentInsurance
       ? estimateEmploymentInsurance(
           averageMonthlyGross,
@@ -939,7 +942,7 @@ export default function Home() {
     const monthlySocialInsurance = healthInsurance + pension + employmentInsurance;
     const incomeTax = paySettings.autoIncomeTax
       ? estimateMonthlyIncomeTax(
-          averageMonthlyGross,
+          averageMonthlyTaxableGross,
           monthlySocialInsurance,
           Number(paySettings.incomeTaxDependents) || 0,
         )
@@ -956,7 +959,7 @@ export default function Home() {
       { key: "healthInsurance", name: "健康保険", monthly: healthInsurance },
       { key: "pension", name: "厚生年金", monthly: pension },
       { key: "employmentInsurance", name: paySettings.autoEmploymentInsurance ? "雇用保険（自動計算）" : "雇用保険", monthly: employmentInsurance },
-      { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動概算）" : "所得税", monthly: incomeTax },
+      { key: "incomeTax", name: paySettings.autoIncomeTax ? "所得税（自動計算）" : "所得税", monthly: incomeTax },
       { key: "residentTax", name: paySettings.autoResidentTax ? "熊本市住民税（自動概算）" : "住民税", monthly: residentTax },
       { key: "otherDeductions", name: paySettings.otherDeductionsLabel.trim() || "その他控除", monthly: Math.max(0, Number(paySettings.otherDeductions) || 0) },
     ].map((deduction) => ({
