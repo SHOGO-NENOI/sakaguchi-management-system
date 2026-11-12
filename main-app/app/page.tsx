@@ -88,7 +88,7 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.23";
+const APP_VERSION = "2.5.24";
 const APP_UPDATED_AT = "2026年11月12日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -114,7 +114,7 @@ const defaultPaySettings: PaySettings = {
   incomeTax: "",
   autoResidentTax: true,
   residentTaxAnnualIncome: "",
-  residentTaxDependents: "0",
+  residentTaxDependents: "1",
   residentTax: "",
   otherDeductionsLabel: "その他控除",
   otherDeductions: "",
@@ -605,11 +605,25 @@ export default function Home() {
         const savedTransfer = localStorage.getItem("sakaguchi-shiftboard-done");
         if (savedTransfer) setShiftBoardDone(JSON.parse(savedTransfer));
         const savedPaySettings = localStorage.getItem("sakaguchi-pay-settings");
-        if (savedPaySettings)
-          setPaySettings({
+        if (savedPaySettings) {
+          const residentDependentMigrated =
+            localStorage.getItem("sakaguchi-resident-dependent-v1") === "1";
+          const nextPaySettings = {
             ...defaultPaySettings,
             ...JSON.parse(savedPaySettings),
-          });
+            ...(!residentDependentMigrated
+              ? { residentTaxDependents: "1" }
+              : {}),
+          };
+          setPaySettings(nextPaySettings);
+          if (!residentDependentMigrated) {
+            localStorage.setItem(
+              "sakaguchi-pay-settings",
+              JSON.stringify(nextPaySettings),
+            );
+            localStorage.setItem("sakaguchi-resident-dependent-v1", "1");
+          }
+        }
       } catch {
         /* 端末設定が読めない場合は既定表示を使う */
       } finally {
