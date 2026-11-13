@@ -175,6 +175,15 @@ test("includes configurable deductions and take-home estimate", async () => {
   assert.match(summary, /半日勤務の休憩/);
 });
 
+test("作業内容の固定選択肢に草取りを含める", async () => {
+  const page = await readFile(
+    new URL("../app/page.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(page, /FIXED_WORK_OPTIONS[\s\S]*"草取り"/);
+  assert.match(page, /GARBAGE_DISPOSAL_TRIGGERS[\s\S]*"草取り"/);
+});
+
 test("separates regular workers and supporters and carries site addresses into plans", async () => {
   const [page, entryTab, sitesTab] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
