@@ -28,6 +28,8 @@ type HistoryPlansTabProps = {
   setHistoryView: (value: "list" | "calendar") => void;
   month: string;
   setMonth: (value: string) => void;
+  historySearch: string;
+  setHistorySearch: (value: string) => void;
   visibleRecordEntries: Entry[];
   planBoardEntries: Entry[];
   selectedPlanIds: string[];
@@ -53,6 +55,8 @@ export default function HistoryPlansTab({
   setHistoryView,
   month,
   setMonth,
+  historySearch,
+  setHistorySearch,
   visibleRecordEntries,
   planBoardEntries,
   selectedPlanIds,
@@ -106,6 +110,34 @@ export default function HistoryPlansTab({
           {activeTab === "plans" ? "＋ 予定を入力" : "＋ 記録を入力"}
         </button>
       </div>
+      {activeTab === "history" && (
+        <div className="site-card-search history-record-search">
+          <span>⌕</span>
+          <input
+            type="search"
+            aria-label="勤務記録をキーワード検索"
+            placeholder="現場名・場所・作業者・作業内容・メモなど"
+            value={historySearch}
+            onChange={(event) => setHistorySearch(event.target.value)}
+          />
+          {historySearch && (
+            <button type="button" onClick={() => setHistorySearch("")}>
+              クリア
+            </button>
+          )}
+          <small>
+            {visibleRecordEntries.reduce(
+              (total, entry) =>
+                total +
+                (entry.type === "休み"
+                  ? 1
+                  : Math.max(1, entrySiteRows(entry).length)),
+              0,
+            )}
+            件
+          </small>
+        </div>
+      )}
       <div className="plan-view-row">
         <div className="history-tools">
           {(activeTab === "history" || historyView === "calendar") && <input
@@ -183,8 +215,8 @@ export default function HistoryPlansTab({
       ) : visibleRecordEntries.length === 0 && activeTab === "history" && historyView === "list" ? (
         <div className="empty">
           <span>記</span>
-          <h3>この月の勤務記録はありません</h3>
-          <p>「＋ 記録を入力」から勤務内容を登録すると、ここに表示されます。</p>
+          <h3>{historySearch ? "検索条件に一致する記録はありません" : "この月の勤務記録はありません"}</h3>
+          <p>{historySearch ? "キーワードを変えて検索してください。" : "「＋ 記録を入力」から勤務内容を登録すると、ここに表示されます。"}</p>
         </div>
       ) : historyView === "calendar" ? (
         <div className="calendar-wrap">

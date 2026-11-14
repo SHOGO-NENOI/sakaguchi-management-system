@@ -184,6 +184,20 @@ test("作業内容の固定選択肢に草取りを含める", async () => {
   assert.match(page, /GARBAGE_DISPOSAL_TRIGGERS[\s\S]*"草取り"/);
 });
 
+test("現場名不明フィルターと勤務記録検索を表示する", async () => {
+  const [sitesTab, historyTab] = await Promise.all([
+    readFile(new URL("../app/components/SitesTab.tsx", import.meta.url), "utf8"),
+    readFile(
+      new URL("../app/components/HistoryPlansTab.tsx", import.meta.url),
+      "utf8",
+    ),
+  ]);
+  assert.match(sitesTab, /現場名不明のみ/);
+  assert.match(sitesTab, /現場名の絞り込み/);
+  assert.match(historyTab, /勤務記録をキーワード検索/);
+  assert.match(historyTab, /現場名・場所・作業者・作業内容・メモなど/);
+});
+
 test("separates regular workers and supporters and carries site addresses into plans", async () => {
   const [page, entryTab, sitesTab] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

@@ -30,6 +30,8 @@ type SitesTabProps = {
   filteredSiteCards: SiteCardData[];
   siteCardSort: "region" | "name" | "newest" | "oldest";
   setSiteCardSort: (value: "region" | "name" | "newest" | "oldest") => void;
+  siteNameFilter: "all" | "missing";
+  setSiteNameFilter: (value: "all" | "missing") => void;
   siteAddressFilter: "all" | "registered" | "missing";
   setSiteAddressFilter: (value: "all" | "registered" | "missing") => void;
   siteDocumentFilter: "all" | "has" | "none";
@@ -84,6 +86,8 @@ export default function SitesTab({
   filteredSiteCards,
   siteCardSort,
   setSiteCardSort,
+  siteNameFilter,
+  setSiteNameFilter,
   siteAddressFilter,
   setSiteAddressFilter,
   siteDocumentFilter,
@@ -168,6 +172,19 @@ export default function SitesTab({
             </select>
           </label>
           <label>
+            <span>現場名</span>
+            <select
+              aria-label="現場名の絞り込み"
+              value={siteNameFilter}
+              onChange={(e) =>
+                setSiteNameFilter(e.target.value as "all" | "missing")
+              }
+            >
+              <option value="all">すべて</option>
+              <option value="missing">現場名不明のみ</option>
+            </select>
+          </label>
+          <label>
             <span>住所</span>
             <select
               value={siteAddressFilter}
@@ -196,12 +213,14 @@ export default function SitesTab({
             </select>
           </label>
           {(siteCardSort !== "region" ||
+            siteNameFilter !== "all" ||
             siteAddressFilter !== "all" ||
             siteDocumentFilter !== "all") && (
             <button
               type="button"
               onClick={() => {
                 setSiteCardSort("region");
+                setSiteNameFilter("all");
                 setSiteAddressFilter("all");
                 setSiteDocumentFilter("all");
               }}

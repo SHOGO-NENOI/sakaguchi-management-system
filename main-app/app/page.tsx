@@ -80,6 +80,7 @@ import {
 import { estimateEmploymentInsurance } from "@/app/lib/employment-insurance";
 import { breakMinutesForEntry, netWorkMinutes } from "@/app/lib/work-time";
 import { resolveOvertimePay, tripAllowanceUnits } from "@/app/lib/payroll";
+import { matchesEntrySearch } from "@/app/lib/entry-search";
 
 const SettingsTab = lazy(() => import("@/app/components/SettingsTab"));
 const SummaryTab = lazy(() => import("@/app/components/SummaryTab"));
@@ -88,8 +89,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.26";
-const APP_UPDATED_AT = "2026年11月13日";
+const APP_VERSION = "2.5.27";
+const APP_UPDATED_AT = "2026年11月14日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -220,8 +221,10 @@ export default function Home() {
   const [siteLocationMessage, setSiteLocationMessage] = useState("");
   const [siteCardSearch, setSiteCardSearch] = useState("");
   const [siteCardSort, setSiteCardSort] = useState<"region" | "name" | "newest" | "oldest">("region");
+  const [siteNameFilter, setSiteNameFilter] = useState<"all" | "missing">("all");
   const [siteAddressFilter, setSiteAddressFilter] = useState<"all" | "registered" | "missing">("all");
   const [siteDocumentFilter, setSiteDocumentFilter] = useState<"all" | "has" | "none">("all");
+  const [historySearch, setHistorySearch] = useState("");
   const [coordinateRegions, setCoordinateRegions] = useState<
     Record<string, RegionInfo>
   >({});
@@ -753,6 +756,13 @@ export default function Home() {
       entrySiteRows(entry).map((row) => row.personnelNames),
       CURRENT_USER_NAME,
     );
+  const searchedHistoryEntries = useMemo(
+    () =>
+      historyMonthEntries.filter((entry) =>
+        matchesEntrySearch(entry, historySearch),
+      ),
+    [historyMonthEntries, historySearch],
+  );
   const visibleRecordEntries =
     activeTab === "plans"
       ? monthEntries
@@ -760,7 +770,7 @@ export default function Home() {
             (entry) => entry.date >= currentDate && belongsToCurrentUser(entry),
           )
           .sort((a, b) => a.date.localeCompare(b.date))
-      : historyMonthEntries;
+      : searchedHistoryEntries;
   const planBoardEntries = entries
     .filter(
       (entry) => entry.date >= currentDate && belongsToCurrentUser(entry),
@@ -1186,6 +1196,8 @@ export default function Home() {
     const query = normalize(siteCardSearch);
     return siteCards.filter((card) => {
       const matchesSearch = !query || normalize(card.site).includes(query);
+      const matchesSiteName =
+        siteNameFilter === "all" || !card.site.trim();
       const resolvedAddress =
         card.address ||
         coordinateAddresses[coordinateKey(card.coordinates)] ||
@@ -1199,7 +1211,7 @@ export default function Home() {
         siteDocumentFilter === "all" ||
         siteDocumentCounts === null ||
         (siteDocumentFilter === "has" ? documentCount > 0 : documentCount === 0);
-      return matchesSearch && matchesAddress && matchesDocuments;
+      return matchesSearch && matchesSiteName && matchesAddress && matchesDocuments;
     });
   }, [
     coordinateAddresses,
@@ -1208,6 +1220,7 @@ export default function Home() {
     siteCards,
     siteDocumentCounts,
     siteDocumentFilter,
+    siteNameFilter,
   ]);
   useEffect(() => {
     if (activeTab !== "sites") return;
@@ -3827,6 +3840,8 @@ export default function Home() {
             filteredSiteCards={filteredSiteCards}
             siteCardSort={siteCardSort}
             setSiteCardSort={setSiteCardSort}
+            siteNameFilter={siteNameFilter}
+            setSiteNameFilter={setSiteNameFilter}
             siteAddressFilter={siteAddressFilter}
             setSiteAddressFilter={setSiteAddressFilter}
             siteDocumentFilter={siteDocumentFilter}
@@ -3908,6 +3923,8 @@ export default function Home() {
             setHistoryView={setHistoryView}
             month={month}
             setMonth={setMonth}
+            historySearch={historySearch}
+            setHistorySearch={setHistorySearch}
             visibleRecordEntries={visibleRecordEntries}
             planBoardEntries={planBoardEntries}
             selectedPlanIds={selectedPlanIds}
