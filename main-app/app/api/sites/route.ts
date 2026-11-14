@@ -2,6 +2,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { siteMasters } from "../../../db/schema";
 import { appendAudit } from "../../lib/audit";
+import { siteIdentityKey } from "../../lib/site-identity";
 
 type SitePayload = { action?: "upsert"; id?: number; site?: string; location?: string; address?: string; coordinates?: string; expectedUpdatedAt?: string };
 
@@ -10,8 +11,6 @@ function clean(payload: SitePayload) {
   if (!site) throw new Error("現場名を入力してください");
   return { site, location: payload.location?.trim() ?? "", address: payload.address?.trim() ?? "", coordinates: payload.coordinates?.trim() ?? "" };
 }
-
-const normalized = (value: string) => value.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase();
 
 export async function GET() {
   const db = await getDb();
@@ -25,7 +24,9 @@ export async function POST(request: Request) {
     const db = await getDb();
     const existing = await db.select().from(siteMasters);
     if (payload.action === "upsert") {
-      const matched = existing.find((row) => normalized(row.site) === normalized(values.site));
+      const matched = existing.find(
+        (row) => siteIdentityKey(row) === siteIdentityKey(values),
+      );
       const now = new Date().toISOString();
       if (matched) {
         if (matched.archivedAt) return Response.json({ site: matched, created: false, archived: true });
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
       await appendAudit({ action: "create", targetType: "site", targetId: site.id, targetName: site.site, after: site });
       return Response.json({ site, created: true }, { status: 201 });
     }
-    if (existing.some((row) => normalized(row.site) === normalized(values.site) && normalized(row.location) === normalized(values.location) && normalized(row.address) === normalized(values.address))) throw new Error("同じ現場がすでに登録されています");
+    if (existing.some((row) => siteIdentityKey(row) === siteIdentityKey(values)))
+      throw new Error("同じ現場名・位置情報がすでに登録されています");
     const now = new Date().toISOString();
     const [site] = await db.insert(siteMasters).values({ ...values, createdAt: now, updatedAt: now }).returning();
     await appendAudit({ action: "create", targetType: "site", targetId: site.id, targetName: site.site, after: site });

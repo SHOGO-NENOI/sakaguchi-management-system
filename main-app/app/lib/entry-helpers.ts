@@ -1,4 +1,5 @@
 import { coordinateKey } from "@/app/lib/coordinates";
+import { siteIdentityKey } from "@/app/lib/site-identity";
 import type { Entry, RegionInfo, SiteCardData } from "@/app/types";
 
 export const SITE_SEPARATOR = "｜";
@@ -209,15 +210,7 @@ export function indexedEntrySiteRows(
 export function siteCardKey(
   card: Pick<SiteCardData, "site" | "location" | "address" | "coordinates">,
 ) {
-  const normalize = (value: string) =>
-    value.normalize("NFKC").trim().replace(/\s+/g, "").toLocaleLowerCase();
-  const site = normalize(card.site);
-  if (site) return `site:${site}`;
-  const address = normalize(card.address);
-  if (address) return `address:${address}`;
-  const coordinates = normalize(card.coordinates);
-  if (coordinates) return `coordinates:${coordinates}`;
-  return `location:${normalize(card.location)}`;
+  return siteIdentityKey(card);
 }
 
 export const PREFECTURE_REGIONS = [
