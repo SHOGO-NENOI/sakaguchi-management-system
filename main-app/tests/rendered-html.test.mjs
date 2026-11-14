@@ -198,6 +198,19 @@ test("現場名不明フィルターと勤務記録検索を表示する", async
   assert.match(historyTab, /現場名・場所・作業者・作業内容・メモなど/);
 });
 
+test("現場名が未入力なら現場一覧に場所を表示して検索対象にする", async () => {
+  const [page, sitesTab] = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/components/SitesTab.tsx", import.meta.url), "utf8"),
+  ]);
+  assert.match(
+    sitesTab,
+    /card\.site\.trim\(\) \|\|\s*card\.location\.trim\(\) \|\|\s*"現場名不明"/,
+  );
+  assert.match(sitesTab, /現場名・場所を入力して検索/);
+  assert.match(page, /normalize\(card\.location\)\.includes\(query\)/);
+});
+
 test("separates regular workers and supporters and carries site addresses into plans", async () => {
   const [page, entryTab, sitesTab] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

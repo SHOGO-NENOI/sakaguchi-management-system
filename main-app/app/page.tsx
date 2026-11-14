@@ -89,7 +89,7 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.27";
+const APP_VERSION = "2.5.28";
 const APP_UPDATED_AT = "2026年11月14日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
@@ -1195,7 +1195,10 @@ export default function Home() {
       value.normalize("NFKC").trim().replace(/\s+/g, "").toLocaleLowerCase();
     const query = normalize(siteCardSearch);
     return siteCards.filter((card) => {
-      const matchesSearch = !query || normalize(card.site).includes(query);
+      const matchesSearch =
+        !query ||
+        normalize(card.site).includes(query) ||
+        normalize(card.location).includes(query);
       const matchesSiteName =
         siteNameFilter === "all" || !card.site.trim();
       const resolvedAddress =
@@ -1347,20 +1350,22 @@ export default function Home() {
 
     const sortWithinPrefecture = (cards: SiteCardData[]) =>
       [...cards].sort((a, b) => {
+        const aName = a.site.trim() || a.location.trim();
+        const bName = b.site.trim() || b.location.trim();
         if (siteCardSort === "name") {
-          return a.site.localeCompare(b.site, "ja", { sensitivity: "base" });
+          return aName.localeCompare(bName, "ja", { sensitivity: "base" });
         }
         const aDate = a.lastDate || "";
         const bDate = b.lastDate || "";
         // 前回訪問日の並べ替えでは、未訪問を常に最後にまとめる。
-        if (!aDate && !bDate) return a.site.localeCompare(b.site, "ja");
+        if (!aDate && !bDate) return aName.localeCompare(bName, "ja");
         if (!aDate) return 1;
         if (!bDate) return -1;
         const dateOrder =
           siteCardSort === "oldest"
             ? aDate.localeCompare(bDate)
             : bDate.localeCompare(aDate);
-        return dateOrder || a.site.localeCompare(b.site, "ja");
+        return dateOrder || aName.localeCompare(bName, "ja");
       });
 
     return [...prefectureGroups.entries()]
@@ -1394,7 +1399,12 @@ export default function Home() {
             .sort(([a], [b]) => sortUnsetLast(a, b))
             .map(([municipality, cards]) => [
               municipality,
-              [...cards].sort((a, b) => a.site.localeCompare(b.site, "ja")),
+              [...cards].sort((a, b) =>
+                (a.site.trim() || a.location.trim()).localeCompare(
+                  b.site.trim() || b.location.trim(),
+                  "ja",
+                ),
+              ),
             ] as [string, SiteCardData[]]),
           flat: false,
         };

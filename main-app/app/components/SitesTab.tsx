@@ -144,8 +144,8 @@ export default function SitesTab({
           <span>⌕</span>
           <input
             type="search"
-            aria-label="現場名で検索"
-            placeholder="現場名を入力して検索"
+            aria-label="現場名または場所で検索"
+            placeholder="現場名・場所を入力して検索"
             value={siteCardSearch}
             onChange={(e) => setSiteCardSearch(e.target.value)}
           />
@@ -383,7 +383,11 @@ export default function SitesTab({
                               <article className="site-card" key={cardKey}>
                                 <div className="site-card-top">
                                   <div className="site-card-identity">
-                                    <h3>{card.site || "現場名不明"}</h3>
+                                    <h3>
+                                      {card.site.trim() ||
+                                        card.location.trim() ||
+                                        "現場名不明"}
+                                    </h3>
                                     <small>
                                       {region.prefecture}　{region.municipality}
                                     </small>
