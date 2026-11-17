@@ -211,6 +211,18 @@ test("現場名が未入力なら現場一覧に場所を表示して検索対�
   assert.match(page, /normalize\(card\.location\)\.includes\(query\)/);
 });
 
+test("休みの編集時に上書き防止用の更新日時を送信する", async () => {
+  const page = await readFile(
+    new URL("../app/page.tsx", import.meta.url),
+    "utf8",
+  );
+  assert.match(
+    page,
+    /expectedUpdatedAt:\s*existing\?\.updatedAt,[\s\S]*?type:\s*"休み" as WorkType/,
+  );
+  assert.match(page, /failureMessages\.add\(errorMessage\(error/);
+});
+
 test("separates regular workers and supporters and carries site addresses into plans", async () => {
   const [page, entryTab, sitesTab] = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

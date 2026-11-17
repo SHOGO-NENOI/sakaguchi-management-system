@@ -89,8 +89,8 @@ const SitesTab = lazy(() => import("@/app/components/SitesTab"));
 const ToolsTab = lazy(() => import("@/app/components/ToolsTab"));
 const HistoryPlansTab = lazy(() => import("@/app/components/HistoryPlansTab"));
 
-const APP_VERSION = "2.5.28";
-const APP_UPDATED_AT = "2026年11月14日";
+const APP_VERSION = "2.5.29";
+const APP_UPDATED_AT = "2026年11月17日";
 const CURRENT_USER_NAME = "子野井";
 const REGULAR_PERSONNEL_NAMES = ["坂口", "清田", "子野井"];
 const DEFAULT_SUPPORT_PERSONNEL_NAMES = ["下岸"];
@@ -1678,6 +1678,7 @@ export default function Home() {
       const updated = new Map<string, Entry>();
       const created: Entry[] = [];
       let failed = 0;
+      const failureMessages = new Set<string>();
       for (const date of dates) {
         const existingForDate =
           editingId && date === form.date
@@ -1695,6 +1696,7 @@ export default function Home() {
           const payload = {
             ...emptyEntry(),
             id: existing ? Number(existing.id) : undefined,
+            expectedUpdatedAt: existing?.updatedAt,
             date,
             type: "休み" as WorkType,
             start: "",
@@ -1724,8 +1726,9 @@ export default function Home() {
             if (existing) updated.set(existing.id, data.entry);
             else created.push(data.entry);
             if (data.warning) setError(`休みは保存しました。${data.warning}`);
-          } catch {
+          } catch (error) {
             failed += 1;
+            failureMessages.add(errorMessage(error, "保存できませんでした"));
           }
         }
       }
@@ -1734,8 +1737,12 @@ export default function Home() {
         ...created,
       ]);
       setMonth(form.date.slice(0, 7));
-      if (failed)
-        setError(`${dates.length}日間のうち${failed}件を保存できませんでした`);
+      if (failed) {
+        const details = [...failureMessages].join("／");
+        setError(
+          `${dates.length}日間のうち${failed}件を保存できませんでした${details ? `：${details}` : ""}`,
+        );
+      }
       else {
         setForm(emptyEntry());
         setOffEndDate(today());
